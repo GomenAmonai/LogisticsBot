@@ -1,0 +1,30 @@
+services:
+  # Веб-приложение
+  webapp:
+    build: .
+    container_name: logistics-webapp
+    ports:
+      - "5001:5000"  # Изменен внешний порт на 5001, чтобы избежать конфликта
+    volumes:
+      - ./data:/app/data
+      - ./.env:/app/.env
+    environment:
+      - FLASK_DEBUG=True
+      - WEBAPP_PORT=5000
+    command: python run_webapp.py
+    restart: unless-stopped
+
+  # Telegram бот
+  bot:
+    build: .
+    container_name: logistics-bot
+    volumes:
+      - ./data:/app/data
+      - ./.env:/app/.env
+    environment:
+      - FLASK_DEBUG=False
+    command: python main.py
+    restart: unless-stopped
+    depends_on:
+      - webapp
+

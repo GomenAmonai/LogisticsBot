@@ -1,0 +1,40 @@
+FROM node:18-alpine AS react-builder
+
+WORKDIR /app/react-app
+
+# Копируем package файлы
+COPY webapp/react-app/package*.json ./
+
+# Устанавливаем зависимости (используем npm ci для быстрой установки)
+RUN npm ci --only=production --legacy-peer-deps || npm install --legacy-peer-deps
+
+# Копируем исходники
+COPY webapp/react-app/ .
+
+# Собираем React приложение
+RUN npm run build
+
+# Финальный образ с Python и собранным React
+FROM python:3.9-slim
+
+WORKDIR /app
+
+# Копируем Python зависимости
+COPY requirements.txt .
+
+# Устанавливаем Python зависимости
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Копируем весь проект
+COPY . .
+
+# Копируем собранный React из builder
+COPY --from=react-builder /app/react-app/dist ./webapp/static/react
+
+# Создаем директорию для данных
+RUN mkdir -p data
+
+EXPOSE 5000
+
+CMD ["python", "run_webapp.py"]
+

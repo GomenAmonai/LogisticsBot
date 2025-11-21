@@ -1,0 +1,73 @@
+const API_BASE = import.meta.env.VITE_API_URL || window.location.origin
+
+export const authUser = async (initData) => {
+  const response = await fetch(`${API_BASE}/auth`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ initData })
+  })
+  return response.json()
+}
+
+export const getCurrentUser = async () => {
+  const response = await fetch(`${API_BASE}/api/user`)
+  return response.json()
+}
+
+export const getOrders = async () => {
+  const response = await fetch(`${API_BASE}/api/orders`)
+  return response.json()
+}
+
+export const createOrder = async (orderData) => {
+  const response = await fetch(`${API_BASE}/api/orders`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(orderData)
+  })
+  return response.json()
+}
+
+export const getOrder = async (orderId) => {
+  const response = await fetch(`${API_BASE}/api/orders/${orderId}`)
+  return response.json()
+}
+
+export const updateOrderStatus = async (orderId, status) => {
+  const response = await fetch(`${API_BASE}/api/orders/${orderId}/status`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ status })
+  })
+  return response.json()
+}
+
+export const getTickets = async (status) => {
+  const url = status 
+    ? `${API_BASE}/api/tickets?status=${status}`
+    : `${API_BASE}/api/tickets`
+  const response = await fetch(url)
+  return response.json()
+}
+
+export const acceptTicket = async (ticketId) => {
+  const response = await fetch(`${API_BASE}/api/tickets/${ticketId}/accept`, {
+    method: 'POST'
+  })
+  return response.json()
+}
+
+export const getStats = async () => {
+  const response = await fetch(`${API_BASE}/api/stats`)
+  return response.json()
+}
+
+export const createPayment = async (paymentData) => {
+  const response = await fetch(`${API_BASE}/api/payments`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(paymentData)
+  })
+  return response.json()
+}
+

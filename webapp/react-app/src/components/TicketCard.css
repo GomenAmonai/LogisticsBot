@@ -1,0 +1,54 @@
+.ticket-card {
+  display: flex;
+  flex-direction: column;
+}
+
+.ticket-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.ticket-id {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.ticket-body {
+  flex: 1;
+  margin-bottom: 16px;
+}
+
+.ticket-description {
+  color: var(--text-secondary);
+  font-size: 16px;
+  line-height: 1.5;
+  margin-bottom: 12px;
+}
+
+.ticket-info {
+  display: flex;
+  gap: 8px;
+  font-size: 14px;
+  margin-bottom: 8px;
+}
+
+.ticket-label {
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.ticket-value {
+  color: var(--text-primary);
+}
+
+.ticket-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: auto;
+}
+
