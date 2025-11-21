@@ -294,7 +294,7 @@ class Database:
         ''', (order_id,))
         
         conn.commit()
-        order_id = cursor.lastrowid
+        # order_id уже получен выше, не нужно получать снова
         
         # Отправляем уведомление о новом заказе
         try:

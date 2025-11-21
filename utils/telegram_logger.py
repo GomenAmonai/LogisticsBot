@@ -49,7 +49,20 @@ async def send_to_group(message: str, parse_mode: str = None):
             )
             return True
     except TelegramError as e:
+        error_msg = str(e)
         logger.error(f"Ошибка отправки в группу: {e}")
+        
+        # Обрабатываем миграцию группы в супергруппу
+        if "migrated" in error_msg.lower() or "new chat id" in error_msg.lower():
+            # Пытаемся извлечь новый ID из сообщения об ошибке
+            import re
+            match = re.search(r'-?\d+', error_msg)
+            if match:
+                new_id = match.group()
+                logger.warning(f"⚠️ Группа мигрирована! Новый ID: {new_id}. Обновите LOG_GROUP_ID в .env")
+                # Можно автоматически обновить, но лучше вручную
+                # global LOG_GROUP_ID
+                # LOG_GROUP_ID = int(new_id)
     except Exception as e:
         logger.error(f"Неожиданная ошибка при отправке в группу: {e}")
     
@@ -58,18 +71,42 @@ async def send_to_group(message: str, parse_mode: str = None):
 
 def send_log_sync(message: str, parse_mode: str = None):
     """Синхронная обертка для отправки в группу"""
+    import threading
+    
+    def send_in_thread():
+        """Отправка в отдельном потоке с новым event loop"""
+        try:
+            asyncio.run(send_to_group(message, parse_mode))
+        except Exception as e:
+            logger.error(f"Ошибка отправки в потоке: {e}")
+    
     try:
-        loop = asyncio.get_event_loop()
-        if loop.is_running():
-            # Если цикл уже запущен, создаем задачу
-            asyncio.create_task(send_to_group(message, parse_mode))
-        else:
-            loop.run_until_complete(send_to_group(message, parse_mode))
-    except RuntimeError:
-        # Если нет event loop, создаем новый
-        asyncio.run(send_to_group(message, parse_mode))
+        # Пытаемся использовать существующий event loop
+        try:
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                # Если цикл запущен, отправляем в отдельном потоке
+                thread = threading.Thread(target=send_in_thread, daemon=True)
+                thread.start()
+                return True
+            else:
+                # Цикл существует, но не запущен
+                loop.run_until_complete(send_to_group(message, parse_mode))
+                return True
+        except RuntimeError:
+            # Нет event loop, создаем новый
+            asyncio.run(send_to_group(message, parse_mode))
+            return True
     except Exception as e:
-        logger.error(f"Ошибка в send_log_sync: {e}")
+        logger.error(f"Ошибка в send_log_sync: {e}", exc_info=True)
+        # Пробуем в отдельном потоке как fallback
+        try:
+            thread = threading.Thread(target=send_in_thread, daemon=True)
+            thread.start()
+            return True
+        except Exception as e2:
+            logger.error(f"Критическая ошибка отправки: {e2}")
+            return False
 
 
 def format_error_log(error: Exception, context: str = None):

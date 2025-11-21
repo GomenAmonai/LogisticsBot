@@ -6,6 +6,7 @@ __pycache__/
 .Python
 venv/
 ENV/
+env/
 build/
 develop-eggs/
 dist/
@@ -24,6 +25,7 @@ wheels/
 
 # Environment variables
 .env
+.env.local
 
 # Database
 *.db
@@ -31,17 +33,6 @@ wheels/
 *.sqlite3
 data/
 !data/.gitkeep
-
-# Node.js
-node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-.pnpm-debug.log*
-
-# React build
-webapp/react-app/dist/
-webapp/static/react/
 
 # IDE
 .vscode/
@@ -54,3 +45,19 @@ webapp/static/react/
 .DS_Store
 Thumbs.db
 
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# React build
+webapp/react-app/dist/
+webapp/static/react/
+
+# Logs
+*.log
+
+# Docker
+.dockerignore
