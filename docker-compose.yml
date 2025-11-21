@@ -7,9 +7,10 @@ services:
       - "5001:5000"  # Изменен внешний порт на 5001, чтобы избежать конфликта
     volumes:
       - ./data:/app/data
-      - ./.env:/app/.env
+      - ./.env:/app/.env:ro  # Только чтение для безопасности
     environment:
-      - FLASK_DEBUG=True
+      - FLASK_DEBUG=False
+      - PORT=5000  # Railway использует PORT
       - WEBAPP_PORT=5000
     command: python run_webapp.py
     restart: unless-stopped

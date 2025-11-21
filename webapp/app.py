@@ -453,7 +453,8 @@ def react_app():
     return render_template('react_index.html')
 
 if __name__ == '__main__':
-    port = int(os.getenv('WEBAPP_PORT', os.getenv('PORT', 5000)))
+    # Railway использует переменную PORT
+    port = int(os.getenv('PORT', os.getenv('WEBAPP_PORT', 5000)))
     debug = os.getenv('FLASK_DEBUG', 'False').lower() == 'true'
     host = os.getenv('HOST', '0.0.0.0')
     print(f"🚀 Запуск веб-приложения на {host}:{port}")

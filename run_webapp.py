@@ -12,12 +12,27 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from webapp.app import app
 
 if __name__ == '__main__':
-    port = int(os.getenv('WEBAPP_PORT', 5000))
-    debug = os.getenv('FLASK_DEBUG', 'True').lower() == 'true'
+    # Railway и другие платформы используют переменную PORT
+    # Для локальной разработки используем 5001
+    port = int(os.getenv('PORT', os.getenv('WEBAPP_PORT', 5001)))
+    # В продакшене отключаем debug
+    debug = os.getenv('FLASK_DEBUG', 'False').lower() == 'true'
     
-    print(f"🚀 Запуск веб-приложения на порту {port}")
+    # Важно: Railway требует слушать на 0.0.0.0
+    host = os.getenv('HOST', '0.0.0.0')
+    
+    print(f"🚀 Запуск веб-приложения на {host}:{port}")
     print(f"📱 URL: http://localhost:{port}")
-    print(f"🌐 Для Telegram WebApp используйте ngrok или другой туннелинг")
+    print(f"🌐 Debug mode: {debug}")
+    print(f"🌍 Host: {host}")
     
-    app.run(host='0.0.0.0', port=port, debug=debug)
+    try:
+        app.run(host=host, port=port, debug=debug)
+    except OSError as e:
+        if "Address already in use" in str(e):
+            print(f"❌ Порт {port} занят!")
+            print(f"💡 Попробуйте другой порт: PORT=5002 python run_webapp.py")
+            print(f"💡 Или остановите процесс: lsof -ti :{port} | xargs kill -9")
+        else:
+            raise
 
