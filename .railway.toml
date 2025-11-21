@@ -1,5 +1,6 @@
 [build]
 builder = "NIXPACKS"
+buildCommand = "cd webapp/react-app && npm install --legacy-peer-deps && npm run build"
 
 [deploy]
 startCommand = "python run_webapp.py"
