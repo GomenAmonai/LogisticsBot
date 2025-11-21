@@ -13,6 +13,8 @@ from handlers.manager_handlers import register_manager_handlers
 from handlers.webapp_handler import register_webapp_handlers
 from handlers.admin_commands import register_admin_commands
 from utils.error_handler import register_error_handler
+from utils.telegram_logger import init_log_group
+from config import LOG_GROUP_ID
 
 # Настройка логирования
 logging.basicConfig(
@@ -79,6 +81,15 @@ def main():
     
     # Регистрируем обработчик ошибок
     register_error_handler(application)
+    
+    # Инициализируем группу для логов
+    if LOG_GROUP_ID:
+        if init_log_group(LOG_GROUP_ID):
+            logger.info(f"✅ Группа для логов инициализирована: {LOG_GROUP_ID}")
+        else:
+            logger.warning(f"⚠️ Не удалось инициализировать группу для логов: {LOG_GROUP_ID}")
+    else:
+        logger.info("ℹ️ LOG_GROUP_ID не установлен, логи в группу не отправляются")
     
     logger.info("✅ Все обработчики зарегистрированы")
     logger.info("🚀 Бот запущен и готов к работе...")

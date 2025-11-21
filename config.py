@@ -26,3 +26,6 @@ if WEBAPP_URL and WEBAPP_URL == 'https://your-webapp-url.com':
 
 # Настройки для админов (можно добавить список ID админов)
 ADMIN_IDS = os.getenv('ADMIN_IDS', '').split(',') if os.getenv('ADMIN_IDS') else []
+
+# ID группы для логов и уведомлений
+LOG_GROUP_ID = os.getenv('LOG_GROUP_ID', '')

@@ -219,6 +219,9 @@ def orders():
             db.assign_order_to_manager(order_id, managers[0]['user_id'])
         
         order = db.get_order(order_id)
+        
+        # Уведомление о заказе уже отправлено в database.create_order
+        
         return jsonify({'success': True, 'order': dict(order)}), 201
 
 
@@ -437,12 +440,43 @@ def handle_exception(error):
 @app.before_request
 def before_request():
     """Middleware перед каждым запросом"""
+    import time
+    request._start_time = time.time()  # Сохраняем время начала запроса
     app_logger.debug(f'Request: {request.method} {request.path}')
 
 
 @app.after_request
 def after_request(response):
     """Middleware после каждого запроса"""
+    import time
+    from utils.telegram_logger import send_log_sync, format_api_log, init_log_group
+    from config import LOG_GROUP_ID
+    
+    # Инициализируем группу для логов если нужно
+    if LOG_GROUP_ID and not hasattr(app, '_log_group_init'):
+        init_log_group(LOG_GROUP_ID)
+        app._log_group_init = True
+    
+    # Логируем API запросы в группу (только важные)
+    if LOG_GROUP_ID:
+        # Логируем только ошибки и важные запросы
+        if response.status_code >= 400 or request.path.startswith('/api/'):
+            duration = getattr(request, '_start_time', 0)
+            if hasattr(request, '_start_time'):
+                duration = (time.time() - request._start_time) * 1000
+            else:
+                duration = 0
+            
+            user_id = session.get('user_id') if hasattr(session, 'get') else None
+            log_message = format_api_log(
+                request.method,
+                request.path,
+                response.status_code,
+                duration,
+                user_id
+            )
+            send_log_sync(log_message, parse_mode='HTML')
+    
     app_logger.debug(f'Response: {response.status_code} for {request.path}')
     return response
 

@@ -15,14 +15,25 @@ from telegram.error import (
     InvalidToken
 )
 from telegram.ext import ContextTypes
+from utils.telegram_logger import send_log_sync, format_error_log, init_log_group
+from config import LOG_GROUP_ID
 
 logger = logging.getLogger(__name__)
+
+# Инициализируем группу для логов
+if LOG_GROUP_ID:
+    init_log_group(LOG_GROUP_ID)
 
 
 async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Обрабатывает ошибки, возникающие при работе бота"""
     
     logger.error(f"Exception while handling an update: {context.error}", exc_info=context.error)
+    
+    # Отправляем ошибку в группу
+    context_str = f"Update: {type(update).__name__}" if update else "Unknown"
+    error_message = format_error_log(context.error, context_str)
+    send_log_sync(error_message, parse_mode='HTML')
     
     # Проверяем тип ошибки
     if isinstance(context.error, Conflict):

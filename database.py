@@ -264,6 +264,28 @@ class Database:
                 INSERT INTO tickets (order_id, manager_id, status)
                 VALUES (?, ?, 'new')
             ''', (order_id, manager_id))
+            ticket_id = cursor.lastrowid
+            
+            # Отправляем уведомление о новом тикете
+            try:
+                from utils.telegram_logger import send_log_sync, format_ticket_notification, init_log_group
+                from config import LOG_GROUP_ID
+                
+                if LOG_GROUP_ID:
+                    init_log_group(LOG_GROUP_ID)
+                    ticket_data = {
+                        'id': ticket_id,
+                        'order_id': order_id,
+                        'client_id': client_id,
+                        'manager_id': manager_id,
+                        'description': description,
+                        'status': 'new'
+                    }
+                    message = format_ticket_notification(ticket_data)
+                    send_log_sync(message, parse_mode='HTML')
+            except Exception as e:
+                import logging
+                logging.error(f"Ошибка отправки уведомления о тикете: {e}")
         
         # Создаем начальную запись отслеживания
         cursor.execute('''
@@ -272,6 +294,29 @@ class Database:
         ''', (order_id,))
         
         conn.commit()
+        order_id = cursor.lastrowid
+        
+        # Отправляем уведомление о новом заказе
+        try:
+            from utils.telegram_logger import send_log_sync, format_order_notification, init_log_group
+            from config import LOG_GROUP_ID
+            
+            if LOG_GROUP_ID:
+                init_log_group(LOG_GROUP_ID)
+                order_data = {
+                    'id': order_id,
+                    'client_id': client_id,
+                    'from_address': from_address,
+                    'to_address': to_address,
+                    'price': price,
+                    'status': 'pending'
+                }
+                message = format_order_notification(order_data)
+                send_log_sync(message, parse_mode='HTML')
+        except Exception as e:
+            import logging
+            logging.error(f"Ошибка отправки уведомления о заказе: {e}")
+        
         conn.close()
         return order_id
     
