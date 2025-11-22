@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react'
 import './DeliveryScreen.css'
 import { getOrders, getOrderTracking, contactLogist } from '../services/api'
 import OrderCard from './OrderCard'
+import { useTheme } from '../contexts/ThemeContext'
 
 const DeliveryScreen = ({ user, selectedOrder: initialOrder, onBack }) => {
+  const { theme } = useTheme()
   const [orders, setOrders] = useState([])
   const [selectedOrder, setSelectedOrder] = useState(initialOrder || null)
   const [tracking, setTracking] = useState(null)
@@ -72,10 +74,14 @@ const DeliveryScreen = ({ user, selectedOrder: initialOrder, onBack }) => {
   }
 
   const getStatusInfo = (status) => {
+    // Используем hex-значения для inline стилей, так как CSS переменные нельзя конкатенировать
+    // Темная тема: #6366f1 (индиго), Светлая тема: #8b6f47 (коричневый)
+    const primaryColor = theme === 'light' ? '#8b6f47' : '#6366f1'
+    
     const statuses = {
       'pending': { text: 'Ожидает обработки', emoji: '⏳', color: '#fbbf24' },
-      'accepted': { text: 'Принят в работу', emoji: '✅', color: 'var(--primary)' },
-      'in_transit': { text: 'В пути', emoji: '🚚', color: 'var(--primary)' },
+      'accepted': { text: 'Принят в работу', emoji: '✅', color: primaryColor },
+      'in_transit': { text: 'В пути', emoji: '🚚', color: primaryColor },
       'out_for_delivery': { text: 'Доставляется', emoji: '📦', color: '#34d399' },
       'delivered': { text: 'Доставлен', emoji: '✅', color: '#10b981' },
       'completed': { text: 'Завершен', emoji: '✅', color: '#10b981' },
