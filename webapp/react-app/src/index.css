@@ -34,10 +34,14 @@
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
   --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
   --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.6);
+  
+  /* Focus shadow */
+  --focus-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
 }
 
 [data-theme="light"] {
   /* Светлая тема - кремо-бежевый и темно-коричневый */
+  --focus-shadow: 0 0 0 3px rgba(139, 111, 71, 0.1);
   --bg-primary: #f5f1e8;
   --bg-secondary: #faf8f3;
   --bg-tertiary: #ede8dd;
