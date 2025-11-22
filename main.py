@@ -6,7 +6,7 @@ import logging
 import os
 from telegram.ext import Application
 from config import BOT_TOKEN
-from handlers.start_handler import start_handler, menu_handler
+from handlers.start_handler import start_handler, menu_handler, accept_privacy_handler
 from handlers.client_handlers import register_client_handlers
 from handlers.admin_handlers import register_admin_handlers
 from handlers.manager_handlers import register_manager_handlers
@@ -64,9 +64,10 @@ def main():
         return
     
     # Регистрируем обработчики команд
-    from telegram.ext import CommandHandler
+    from telegram.ext import CommandHandler, CallbackQueryHandler
     application.add_handler(CommandHandler("start", start_handler))
     application.add_handler(CommandHandler("menu", menu_handler))
+    application.add_handler(CallbackQueryHandler(accept_privacy_handler, pattern="^accept_privacy$"))
     
     # Регистрируем обработчики для разных ролей
     register_client_handlers(application)

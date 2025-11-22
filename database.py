@@ -33,10 +33,17 @@ class Database:
                 first_name TEXT,
                 last_name TEXT,
                 role TEXT DEFAULT 'client',
+                privacy_accepted INTEGER DEFAULT 0,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         ''')
+        
+        # Добавляем колонку privacy_accepted если её нет (для существующих БД)
+        try:
+            cursor.execute('ALTER TABLE users ADD COLUMN privacy_accepted INTEGER DEFAULT 0')
+        except sqlite3.OperationalError:
+            pass  # Колонка уже существует
         
         # Создаем таблицу для хранения данных пользователей
         cursor.execute('''
@@ -136,7 +143,7 @@ class Database:
     
     def add_user(self, user_id: int, username: Optional[str] = None, 
                  first_name: Optional[str] = None, last_name: Optional[str] = None,
-                 role: str = UserRole.CLIENT) -> bool:
+                 role: str = UserRole.CLIENT, privacy_accepted: bool = False) -> bool:
         """Добавляет или обновляет пользователя в базе данных"""
         conn = self.get_connection()
         cursor = conn.cursor()
@@ -156,9 +163,9 @@ class Database:
         else:
             # Добавляем нового пользователя
             cursor.execute('''
-                INSERT INTO users (user_id, username, first_name, last_name, role)
-                VALUES (?, ?, ?, ?, ?)
-            ''', (user_id, username, first_name, last_name, role))
+                INSERT INTO users (user_id, username, first_name, last_name, role, privacy_accepted)
+                VALUES (?, ?, ?, ?, ?, ?)
+            ''', (user_id, username, first_name, last_name, role, 1 if privacy_accepted else 0))
         
         conn.commit()
         conn.close()
@@ -174,8 +181,34 @@ class Database:
         
         conn.close()
         if row:
-            return dict(row)
+            user_dict = dict(row)
+            # Преобразуем privacy_accepted в boolean
+            if 'privacy_accepted' in user_dict:
+                user_dict['privacy_accepted'] = bool(user_dict['privacy_accepted'])
+            return user_dict
         return None
+    
+    def accept_privacy(self, user_id: int) -> bool:
+        """Отмечает, что пользователь принял политику конфиденциальности"""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute('''
+            UPDATE users 
+            SET privacy_accepted = 1, updated_at = CURRENT_TIMESTAMP
+            WHERE user_id = ?
+        ''', (user_id,))
+        
+        conn.commit()
+        conn.close()
+        return True
+    
+    def has_accepted_privacy(self, user_id: int) -> bool:
+        """Проверяет, принял ли пользователь политику конфиденциальности"""
+        user = self.get_user(user_id)
+        if user:
+            return user.get('privacy_accepted', False)
+        return False
     
     def set_user_role(self, user_id: int, role: str) -> bool:
         """Устанавливает роль пользователя"""

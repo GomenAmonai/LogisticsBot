@@ -19,15 +19,10 @@ def get_client_menu(webapp_url: str = None) -> InlineKeyboardMarkup:
     
     keyboard.extend([
         [
-            InlineKeyboardButton("📦 Мои заказы", callback_data="client_orders"),
-            InlineKeyboardButton("➕ Создать заказ", callback_data="client_create_order")
+            InlineKeyboardButton("📋 Правила использования", callback_data="client_rules")
         ],
         [
-            InlineKeyboardButton("📊 Профиль", callback_data="client_profile"),
-            InlineKeyboardButton("⚙️ Настройки", callback_data="client_settings")
-        ],
-        [
-            InlineKeyboardButton("📝 Помощь", callback_data="client_help")
+            InlineKeyboardButton("📦 Мои заказы", callback_data="client_orders")
         ]
     ])
     
