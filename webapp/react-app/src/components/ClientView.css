@@ -1,7 +1,7 @@
 .client-view {
   min-height: 100vh;
-  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-  color: #f1f5f9;
+  background: var(--bg-primary);
+  color: var(--text-primary);
   position: relative;
   padding-bottom: 80px;
 }

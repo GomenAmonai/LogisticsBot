@@ -2,8 +2,8 @@
   padding: 20px;
   padding-bottom: 100px;
   min-height: 100vh;
-  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-  color: #f1f5f9;
+  background: var(--bg-primary);
+  color: var(--text-primary);
 }
 
 .delivery-header {
@@ -17,9 +17,9 @@
 }
 
 .back-button {
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  color: #f1f5f9;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
   padding: 8px 16px;
   border-radius: 8px;
   cursor: pointer;
@@ -121,21 +121,21 @@
 
 .info-value {
   text-align: right;
-  color: #f1f5f9;
+  color: var(--text-primary);
   flex: 1;
   word-break: break-word;
 }
 
 .info-value.price {
   font-weight: 600;
-  color: #60a5fa;
+  color: var(--primary);
   font-size: 16px;
 }
 
 .tracking-number {
   font-family: monospace;
   font-weight: 600;
-  color: #60a5fa;
+  color: var(--primary);
 }
 
 .tracking-history {
@@ -150,7 +150,7 @@
   margin: 0 0 20px;
   font-size: 18px;
   font-weight: 600;
-  color: #60a5fa;
+  color: var(--primary);
 }
 
 .timeline {
@@ -192,7 +192,7 @@
 
 .timeline-status {
   font-weight: 600;
-  color: #60a5fa;
+  color: var(--primary);
   margin-bottom: 4px;
 }
 
@@ -294,7 +294,7 @@
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
+  background: var(--gradient-primary);
   color: white;
 }
 

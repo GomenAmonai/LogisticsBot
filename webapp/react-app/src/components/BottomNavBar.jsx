@@ -1,5 +1,6 @@
 import React from 'react'
 import './BottomNavBar.css'
+import { HomeIcon, ProfileIcon, DeliveryIcon, SettingsIcon } from './Icons'
 
 const BottomNavBar = ({ activeTab, onTabChange }) => {
   return (
@@ -8,7 +9,9 @@ const BottomNavBar = ({ activeTab, onTabChange }) => {
         className={`nav-item ${activeTab === 'home' ? 'active' : ''}`}
         onClick={() => onTabChange('home')}
       >
-        <span className="nav-icon">🏠</span>
+        <span className="nav-icon">
+          <HomeIcon size={24} />
+        </span>
         <span className="nav-label">Главная</span>
       </button>
       
@@ -16,7 +19,9 @@ const BottomNavBar = ({ activeTab, onTabChange }) => {
         className={`nav-item ${activeTab === 'profile' ? 'active' : ''}`}
         onClick={() => onTabChange('profile')}
       >
-        <span className="nav-icon">👤</span>
+        <span className="nav-icon">
+          <ProfileIcon size={24} />
+        </span>
         <span className="nav-label">Профиль</span>
       </button>
       
@@ -24,7 +29,9 @@ const BottomNavBar = ({ activeTab, onTabChange }) => {
         className={`nav-item ${activeTab === 'delivery' ? 'active' : ''}`}
         onClick={() => onTabChange('delivery')}
       >
-        <span className="nav-icon">🚚</span>
+        <span className="nav-icon">
+          <DeliveryIcon size={24} />
+        </span>
         <span className="nav-label">Доставка</span>
       </button>
       
@@ -32,7 +39,9 @@ const BottomNavBar = ({ activeTab, onTabChange }) => {
         className={`nav-item ${activeTab === 'settings' ? 'active' : ''}`}
         onClick={() => onTabChange('settings')}
       >
-        <span className="nav-icon">⚙️</span>
+        <span className="nav-icon">
+          <SettingsIcon size={24} />
+        </span>
         <span className="nav-label">Настройки</span>
       </button>
     </div>

@@ -74,8 +74,8 @@ const DeliveryScreen = ({ user, selectedOrder: initialOrder, onBack }) => {
   const getStatusInfo = (status) => {
     const statuses = {
       'pending': { text: 'Ожидает обработки', emoji: '⏳', color: '#fbbf24' },
-      'accepted': { text: 'Принят в работу', emoji: '✅', color: '#60a5fa' },
-      'in_transit': { text: 'В пути', emoji: '🚚', color: '#60a5fa' },
+      'accepted': { text: 'Принят в работу', emoji: '✅', color: 'var(--primary)' },
+      'in_transit': { text: 'В пути', emoji: '🚚', color: 'var(--primary)' },
       'out_for_delivery': { text: 'Доставляется', emoji: '📦', color: '#34d399' },
       'delivered': { text: 'Доставлен', emoji: '✅', color: '#10b981' },
       'completed': { text: 'Завершен', emoji: '✅', color: '#10b981' },
