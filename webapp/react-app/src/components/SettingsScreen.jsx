@@ -31,17 +31,21 @@ const SettingsScreen = ({ user, onLogout }) => {
     setNotifications(enabled)
     try {
       setLoading(true)
-      const response = await updateUserProfile({ notifications_enabled: enabled })
-      if (response.error) {
-        throw new Error(response.error)
+      const response = await updateUserProfile({ notifications_enabled: Boolean(enabled) })
+      // Проверяем успешность обновления
+      if (!response || !response.success) {
+        throw new Error(response?.error || 'Не удалось обновить настройки')
       }
       // Успешно обновлено, состояние уже установлено
     } catch (error) {
       console.error('Ошибка обновления уведомлений:', error)
       // Откатываем изменение при ошибке
       setNotifications(previousValue)
+      const errorMessage = error.message || 'Не удалось обновить настройки уведомлений'
       if (window.Telegram?.WebApp) {
-        window.Telegram.WebApp.showAlert('Не удалось обновить настройки уведомлений')
+        window.Telegram.WebApp.showAlert(errorMessage)
+      } else {
+        alert(errorMessage)
       }
     } finally {
       setLoading(false)

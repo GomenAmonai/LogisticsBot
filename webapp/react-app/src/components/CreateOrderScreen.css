@@ -93,7 +93,7 @@
   outline: none;
   border-color: var(--primary);
   background: var(--bg-secondary);
-  box-shadow: 0 0 0 3px rgba(139, 111, 71, 0.1);
+  box-shadow: var(--focus-shadow);
 }
 
 .form-input.error {
@@ -149,7 +149,7 @@ textarea.form-input {
 
 .btn-primary:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 4px 15px rgba(96, 165, 250, 0.4);
+  box-shadow: var(--shadow-lg);
 }
 
 .btn-secondary {
