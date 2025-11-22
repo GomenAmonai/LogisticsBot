@@ -31,12 +31,7 @@ const SettingsScreen = ({ user, onLogout }) => {
     setNotifications(enabled)
     try {
       setLoading(true)
-      const response = await updateUserProfile({ notifications_enabled: Boolean(enabled) })
-      // Проверяем успешность обновления
-      if (!response || !response.success) {
-        throw new Error(response?.error || 'Не удалось обновить настройки')
-      }
-      // Успешно обновлено, состояние уже установлено
+      await updateUserProfile({ notifications_enabled: enabled })
     } catch (error) {
       console.error('Ошибка обновления уведомлений:', error)
       // Откатываем изменение при ошибке
