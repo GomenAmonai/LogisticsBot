@@ -13,8 +13,8 @@ from webapp.app import app
 
 if __name__ == '__main__':
     # Railway и другие платформы используют переменную PORT
-    # Для локальной разработки используем 5001
-    port = int(os.getenv('PORT', os.getenv('WEBAPP_PORT', 5001)))
+    # По умолчанию используем 5000 (как в webapp/app.py и docker-compose.yml)
+    port = int(os.getenv('PORT', os.getenv('WEBAPP_PORT', 5000)))
     # В продакшене отключаем debug
     debug = os.getenv('FLASK_DEBUG', 'False').lower() == 'true'
     

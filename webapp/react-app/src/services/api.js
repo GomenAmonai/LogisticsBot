@@ -85,6 +85,12 @@ export const updateUserProfile = async (profileData) => {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(profileData)
   })
+  
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.error || 'Ошибка обновления профиля')
+  }
+  
   return response.json()
 }
 

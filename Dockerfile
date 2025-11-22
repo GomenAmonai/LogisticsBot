@@ -1,7 +1,7 @@
 # Этап 1: Сборка React приложения
 FROM node:18-alpine AS react-builder
 
-WORKDIR /app/react-app
+WORKDIR /app/webapp/react-app
 
 # Копируем package файлы
 COPY webapp/react-app/package*.json ./
@@ -13,6 +13,7 @@ RUN npm install --legacy-peer-deps --prefer-offline
 COPY webapp/react-app/ .
 
 # Собираем React приложение (выход в ../static/react согласно vite.config.js)
+# Из WORKDIR /app/webapp/react-app путь ../static/react = /app/webapp/static/react
 RUN npm run build
 
 # Этап 2: Python приложение
@@ -29,8 +30,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Копируем весь проект
 COPY . .
 
-# Копируем собранный React из builder (vite собирает в ../static/react)
-COPY --from=react-builder /app/static/react ./webapp/static/react
+# Копируем собранный React из builder
+# Из WORKDIR /app/webapp/react-app путь ../static/react = /app/webapp/static/react
+COPY --from=react-builder /app/webapp/static/react ./webapp/static/react
 
 # Создаем директорию для данных
 RUN mkdir -p data

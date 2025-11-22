@@ -179,7 +179,8 @@ def user():
             'last_name': user['last_name'],
             'role': user['role'],
             'phone': phone,
-            'email': email
+            'email': email,
+            'notifications_enabled': user.get('notifications_enabled', False)
         })
     
     elif request.method == 'PUT':
@@ -202,6 +203,10 @@ def user():
             db.save_user_data(user_id, 'phone', data['phone'])
         if 'email' in data:
             db.save_user_data(user_id, 'email', data['email'])
+        
+        # Обновляем настройки уведомлений
+        if 'notifications_enabled' in data:
+            db.set_notifications_enabled(user_id, data['notifications_enabled'])
         
         return jsonify({'success': True, 'message': 'Profile updated'})
 

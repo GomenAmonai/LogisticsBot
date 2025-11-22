@@ -34,6 +34,7 @@ class Database:
                 last_name TEXT,
                 role TEXT DEFAULT 'client',
                 privacy_accepted INTEGER DEFAULT 0,
+                notifications_enabled INTEGER DEFAULT 0,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
@@ -42,6 +43,12 @@ class Database:
         # Добавляем колонку privacy_accepted если её нет (для существующих БД)
         try:
             cursor.execute('ALTER TABLE users ADD COLUMN privacy_accepted INTEGER DEFAULT 0')
+        except sqlite3.OperationalError:
+            pass  # Колонка уже существует
+        
+        # Добавляем колонку notifications_enabled если её нет
+        try:
+            cursor.execute('ALTER TABLE users ADD COLUMN notifications_enabled INTEGER DEFAULT 0')
         except sqlite3.OperationalError:
             pass  # Колонка уже существует
         
@@ -185,8 +192,33 @@ class Database:
             # Преобразуем privacy_accepted в boolean
             if 'privacy_accepted' in user_dict:
                 user_dict['privacy_accepted'] = bool(user_dict['privacy_accepted'])
+            # Преобразуем notifications_enabled в boolean
+            if 'notifications_enabled' in user_dict:
+                user_dict['notifications_enabled'] = bool(user_dict['notifications_enabled'])
             return user_dict
         return None
+    
+    def set_notifications_enabled(self, user_id: int, enabled: bool) -> bool:
+        """Включает или выключает уведомления для пользователя"""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute('''
+            UPDATE users 
+            SET notifications_enabled = ?, updated_at = CURRENT_TIMESTAMP
+            WHERE user_id = ?
+        ''', (1 if enabled else 0, user_id))
+        
+        conn.commit()
+        conn.close()
+        return True
+    
+    def is_notifications_enabled(self, user_id: int) -> bool:
+        """Проверяет, включены ли уведомления для пользователя"""
+        user = self.get_user(user_id)
+        if user and 'notifications_enabled' in user:
+            return bool(user['notifications_enabled'])
+        return False
     
     def accept_privacy(self, user_id: int) -> bool:
         """Отмечает, что пользователь принял политику конфиденциальности"""
@@ -350,8 +382,52 @@ class Database:
             import logging
             logging.error(f"Ошибка отправки уведомления о заказе: {e}")
         
+        # Отправляем уведомление клиенту, если уведомления включены
+        try:
+            if self.is_notifications_enabled(client_id):
+                self._send_order_created_notification(client_id, order_id)
+        except Exception as e:
+            import logging
+            logging.error(f"Ошибка отправки уведомления клиенту: {e}")
+        
         conn.close()
         return order_id
+    
+    def _send_order_created_notification(self, client_id: int, order_id: int):
+        """Отправляет уведомление клиенту о создании заказа"""
+        try:
+            from telegram import Bot
+            from config import BOT_TOKEN
+            import asyncio
+            import threading
+            
+            if not BOT_TOKEN:
+                return
+            
+            message = f"📦 <b>Заказ создан</b>\n\n"
+            message += f"Ваш заказ #{order_id} успешно создан и ожидает обработки."
+            
+            def send_async():
+                async def send():
+                    bot = Bot(token=BOT_TOKEN)
+                    try:
+                        await bot.send_message(
+                            chat_id=client_id,
+                            text=message,
+                            parse_mode='HTML'
+                        )
+                    except Exception as e:
+                        import logging
+                        logging.error(f"Ошибка отправки уведомления: {e}")
+                
+                asyncio.run(send())
+            
+            thread = threading.Thread(target=send_async)
+            thread.start()
+            
+        except Exception as e:
+            import logging
+            logging.error(f"Ошибка создания уведомления: {e}")
     
     def get_order(self, order_id: int) -> Optional[dict]:
         """Получает информацию о заказе"""
@@ -391,6 +467,12 @@ class Database:
             'cancelled': 'Отменен'
         }
         
+        # Получаем информацию о заказе до обновления
+        cursor.execute('SELECT client_id, status as old_status FROM orders WHERE id = ?', (order_id,))
+        order_info = cursor.fetchone()
+        old_status = order_info['old_status'] if order_info else None
+        client_id = order_info['client_id'] if order_info else None
+        
         cursor.execute('''
             INSERT INTO tracking (order_id, status, description)
             VALUES (?, ?, ?)
@@ -399,7 +481,65 @@ class Database:
         conn.commit()
         success = cursor.rowcount > 0
         conn.close()
+        
+        # Отправляем уведомление клиенту, если уведомления включены
+        if client_id:
+            try:
+                if self.is_notifications_enabled(client_id):
+                    self._send_order_notification(client_id, order_id, old_status, status)
+            except Exception as e:
+                import logging
+                logging.error(f"Ошибка отправки уведомления клиенту: {e}")
+        
         return success
+    
+    def _send_order_notification(self, client_id: int, order_id: int, old_status: str, new_status: str):
+        """Отправляет уведомление клиенту об изменении статуса заказа"""
+        try:
+            from telegram import Bot
+            from config import BOT_TOKEN
+            import asyncio
+            import threading
+            
+            if not BOT_TOKEN:
+                return
+            
+            status_names = {
+                'pending': 'Ожидает обработки',
+                'accepted': 'Принят в работу',
+                'in_transit': 'В пути',
+                'delivered': 'Доставлен',
+                'completed': 'Завершен',
+                'cancelled': 'Отменен'
+            }
+            
+            old_name = status_names.get(old_status, old_status) if old_status else 'новый'
+            new_name = status_names.get(new_status, new_status)
+            
+            message = f"📦 <b>Изменение статуса заказа #{order_id}</b>\n\n"
+            message += f"Статус изменен: {old_name} → {new_name}"
+            
+            def send_async():
+                async def send():
+                    bot = Bot(token=BOT_TOKEN)
+                    try:
+                        await bot.send_message(
+                            chat_id=client_id,
+                            text=message,
+                            parse_mode='HTML'
+                        )
+                    except Exception as e:
+                        import logging
+                        logging.error(f"Ошибка отправки уведомления: {e}")
+                
+                asyncio.run(send())
+            
+            thread = threading.Thread(target=send_async)
+            thread.start()
+            
+        except Exception as e:
+            import logging
+            logging.error(f"Ошибка создания уведомления: {e}")
     
     def create_ticket(self, order_id: int, manager_id: int) -> int:
         """Создает тикет для менеджера"""
@@ -427,49 +567,16 @@ class Database:
         conn = self.get_connection()
         cursor = conn.cursor()
         
-        # Явно указываем колонки с алиасами, чтобы избежать конфликта имен
         if status:
             cursor.execute('''
-                SELECT 
-                    t.id AS ticket_id,
-                    t.order_id,
-                    t.manager_id,
-                    t.status AS ticket_status,
-                    t.assigned_at,
-                    t.accepted_at,
-                    o.id AS order_id_full,
-                    o.client_id,
-                    o.description,
-                    o.from_address,
-                    o.to_address,
-                    o.price,
-                    o.status AS order_status,
-                    o.tracking_number,
-                    o.created_at AS order_created_at
-                FROM tickets t
+                SELECT t.*, o.* FROM tickets t
                 JOIN orders o ON t.order_id = o.id
                 WHERE t.manager_id = ? AND t.status = ?
                 ORDER BY t.assigned_at DESC
             ''', (manager_id, status))
         else:
             cursor.execute('''
-                SELECT 
-                    t.id AS ticket_id,
-                    t.order_id,
-                    t.manager_id,
-                    t.status AS ticket_status,
-                    t.assigned_at,
-                    t.accepted_at,
-                    o.id AS order_id_full,
-                    o.client_id,
-                    o.description,
-                    o.from_address,
-                    o.to_address,
-                    o.price,
-                    o.status AS order_status,
-                    o.tracking_number,
-                    o.created_at AS order_created_at
-                FROM tickets t
+                SELECT t.*, o.* FROM tickets t
                 JOIN orders o ON t.order_id = o.id
                 WHERE t.manager_id = ?
                 ORDER BY t.assigned_at DESC
@@ -477,25 +584,24 @@ class Database:
         
         rows = cursor.fetchall()
         conn.close()
-        
-        # Преобразуем результат в правильный формат
-        result = []
-        for row in rows:
-            ticket_dict = dict(row)
-            # Используем ticket_id как id для совместимости
-            ticket_dict['id'] = ticket_dict['ticket_id']
-            # Сохраняем order_id правильно
-            ticket_dict['order_id'] = ticket_dict.get('order_id') or ticket_dict.get('order_id_full')
-            # Используем ticket_status как status
-            ticket_dict['status'] = ticket_dict['ticket_status']
-            result.append(ticket_dict)
-        
-        return result
+        return [dict(row) for row in rows]
     
     def accept_ticket(self, ticket_id: int) -> bool:
         """Принимает тикет менеджером"""
         conn = self.get_connection()
         cursor = conn.cursor()
+        
+        # Получаем информацию о заказе до обновления
+        cursor.execute('''
+            SELECT o.id as order_id, o.client_id, o.status as old_status
+            FROM tickets t
+            JOIN orders o ON t.order_id = o.id
+            WHERE t.id = ?
+        ''', (ticket_id,))
+        order_info = cursor.fetchone()
+        order_id = order_info['order_id'] if order_info else None
+        client_id = order_info['client_id'] if order_info else None
+        old_status = order_info['old_status'] if order_info else None
         
         cursor.execute('''
             UPDATE tickets 
@@ -512,6 +618,16 @@ class Database:
         conn.commit()
         success = cursor.rowcount > 0
         conn.close()
+        
+        # Отправляем уведомление клиенту, если уведомления включены
+        if client_id and order_id:
+            try:
+                if self.is_notifications_enabled(client_id):
+                    self._send_order_notification(client_id, order_id, old_status, 'accepted')
+            except Exception as e:
+                import logging
+                logging.error(f"Ошибка отправки уведомления клиенту: {e}")
+        
         return success
     
     def get_order_tracking(self, order_id: int) -> List[dict]:
