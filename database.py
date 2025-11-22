@@ -445,6 +445,12 @@ class Database:
         conn = self.get_connection()
         cursor = conn.cursor()
         
+        # Получаем информацию о заказе ДО обновления
+        cursor.execute('SELECT client_id, status as old_status FROM orders WHERE id = ?', (order_id,))
+        order_info = cursor.fetchone()
+        old_status = order_info['old_status'] if order_info else None
+        client_id = order_info['client_id'] if order_info else None
+        
         if manager_id:
             cursor.execute('''
                 UPDATE orders 
@@ -464,14 +470,9 @@ class Database:
             'accepted': 'Принят в работу',
             'in_transit': 'В пути',
             'delivered': 'Доставлен',
+            'completed': 'Завершен',
             'cancelled': 'Отменен'
         }
-        
-        # Получаем информацию о заказе до обновления
-        cursor.execute('SELECT client_id, status as old_status FROM orders WHERE id = ?', (order_id,))
-        order_info = cursor.fetchone()
-        old_status = order_info['old_status'] if order_info else None
-        client_id = order_info['client_id'] if order_info else None
         
         cursor.execute('''
             INSERT INTO tracking (order_id, status, description)
@@ -567,16 +568,49 @@ class Database:
         conn = self.get_connection()
         cursor = conn.cursor()
         
+        # Явно указываем колонки с алиасами, чтобы избежать конфликта имен
         if status:
             cursor.execute('''
-                SELECT t.*, o.* FROM tickets t
+                SELECT 
+                    t.id AS ticket_id,
+                    t.order_id,
+                    t.manager_id,
+                    t.status AS ticket_status,
+                    t.assigned_at,
+                    t.accepted_at,
+                    o.id AS order_id_full,
+                    o.client_id,
+                    o.description,
+                    o.from_address,
+                    o.to_address,
+                    o.price,
+                    o.status AS order_status,
+                    o.tracking_number,
+                    o.created_at AS order_created_at
+                FROM tickets t
                 JOIN orders o ON t.order_id = o.id
                 WHERE t.manager_id = ? AND t.status = ?
                 ORDER BY t.assigned_at DESC
             ''', (manager_id, status))
         else:
             cursor.execute('''
-                SELECT t.*, o.* FROM tickets t
+                SELECT 
+                    t.id AS ticket_id,
+                    t.order_id,
+                    t.manager_id,
+                    t.status AS ticket_status,
+                    t.assigned_at,
+                    t.accepted_at,
+                    o.id AS order_id_full,
+                    o.client_id,
+                    o.description,
+                    o.from_address,
+                    o.to_address,
+                    o.price,
+                    o.status AS order_status,
+                    o.tracking_number,
+                    o.created_at AS order_created_at
+                FROM tickets t
                 JOIN orders o ON t.order_id = o.id
                 WHERE t.manager_id = ?
                 ORDER BY t.assigned_at DESC
@@ -584,7 +618,20 @@ class Database:
         
         rows = cursor.fetchall()
         conn.close()
-        return [dict(row) for row in rows]
+        
+        # Преобразуем результат в правильный формат
+        result = []
+        for row in rows:
+            ticket_dict = dict(row)
+            # Используем ticket_id как id для совместимости
+            ticket_dict['id'] = ticket_dict['ticket_id']
+            # Сохраняем order_id правильно
+            ticket_dict['order_id'] = ticket_dict.get('order_id') or ticket_dict.get('order_id_full')
+            # Используем ticket_status как status
+            ticket_dict['status'] = ticket_dict['ticket_status']
+            result.append(ticket_dict)
+        
+        return result
     
     def accept_ticket(self, ticket_id: int) -> bool:
         """Принимает тикет менеджером"""
