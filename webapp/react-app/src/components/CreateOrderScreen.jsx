@@ -77,7 +77,16 @@ const CreateOrderScreen = ({ user, onBack, onSuccess }) => {
         price: parseFloat(formData.price)
       }
       
-      await createOrder(orderData)
+      const response = await createOrder(orderData)
+      
+      // Проверяем ответ на ошибки
+      if (response.error) {
+        throw new Error(response.error)
+      }
+      
+      if (!response.success && !response.order) {
+        throw new Error('Не удалось создать заказ')
+      }
       
       if (window.Telegram?.WebApp) {
         window.Telegram.WebApp.showAlert('✅ Заказ успешно создан!')
@@ -88,8 +97,9 @@ const CreateOrderScreen = ({ user, onBack, onSuccess }) => {
       }
     } catch (error) {
       console.error('Ошибка создания заказа:', error)
+      const errorMessage = error.message || 'Ошибка создания заказа. Попробуйте позже.'
       if (window.Telegram?.WebApp) {
-        window.Telegram.WebApp.showAlert('Ошибка создания заказа. Попробуйте позже.')
+        window.Telegram.WebApp.showAlert(errorMessage)
       }
     } finally {
       setSubmitting(false)

@@ -60,7 +60,13 @@ const ClientView = ({ user, onLogout }) => {
           />
         )
       case 'delivery':
-        return <DeliveryScreen user={user} selectedOrder={selectedOrder} />
+        return (
+          <DeliveryScreen
+            user={user}
+            selectedOrder={selectedOrder}
+            onBack={() => setSelectedOrder(null)}
+          />
+        )
       case 'settings':
         return <SettingsScreen user={user} onLogout={onLogout} />
       default:

@@ -25,7 +25,15 @@ export const createOrder = async (orderData) => {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(orderData)
   })
-  return response.json()
+  
+  const data = await response.json()
+  
+  // Проверяем статус ответа
+  if (!response.ok) {
+    throw new Error(data.error || 'Ошибка создания заказа')
+  }
+  
+  return data
 }
 
 export const getOrder = async (orderId) => {

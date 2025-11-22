@@ -3,7 +3,7 @@ import './DeliveryScreen.css'
 import { getOrders, getOrderTracking, contactLogist } from '../services/api'
 import OrderCard from './OrderCard'
 
-const DeliveryScreen = ({ user, selectedOrder: initialOrder }) => {
+const DeliveryScreen = ({ user, selectedOrder: initialOrder, onBack }) => {
   const [orders, setOrders] = useState([])
   const [selectedOrder, setSelectedOrder] = useState(initialOrder || null)
   const [tracking, setTracking] = useState(null)
@@ -32,7 +32,7 @@ const DeliveryScreen = ({ user, selectedOrder: initialOrder }) => {
       const data = await getOrders()
       // Показываем только заказы в процессе доставки
       const activeOrders = (data.orders || []).filter(
-        order => order.status !== 'completed' && order.status !== 'cancelled'
+        order => order.status !== 'delivered' && order.status !== 'completed' && order.status !== 'cancelled'
       )
       setOrders(activeOrders)
     } catch (error) {
@@ -76,9 +76,12 @@ const DeliveryScreen = ({ user, selectedOrder: initialOrder }) => {
   const getStatusInfo = (status) => {
     const statuses = {
       'pending': { text: 'Ожидает обработки', emoji: '⏳', color: '#fbbf24' },
-      'in_progress': { text: 'В пути', emoji: '🚚', color: '#60a5fa' },
+      'accepted': { text: 'Принят в работу', emoji: '✅', color: '#60a5fa' },
+      'in_transit': { text: 'В пути', emoji: '🚚', color: '#60a5fa' },
       'out_for_delivery': { text: 'Доставляется', emoji: '📦', color: '#34d399' },
-      'delivered': { text: 'Доставлен', emoji: '✅', color: '#10b981' }
+      'delivered': { text: 'Доставлен', emoji: '✅', color: '#10b981' },
+      'completed': { text: 'Завершен', emoji: '✅', color: '#10b981' },
+      'cancelled': { text: 'Отменен', emoji: '❌', color: '#ef4444' }
     }
     return statuses[status] || { text: status, emoji: '❓', color: '#6b7280' }
   }
@@ -99,7 +102,12 @@ const DeliveryScreen = ({ user, selectedOrder: initialOrder }) => {
         <div className="delivery-header">
           <button
             className="back-button"
-            onClick={() => setSelectedOrder(null)}
+            onClick={() => {
+              setSelectedOrder(null)
+              if (onBack) {
+                onBack()
+              }
+            }}
           >
             ← Назад
           </button>

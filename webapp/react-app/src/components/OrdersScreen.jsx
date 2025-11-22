@@ -57,8 +57,9 @@ const OrdersScreen = ({ user, onOrderClick, onCreateOrder }) => {
     const counts = {
       all: orders.length,
       pending: 0,
-      in_progress: 0,
-      completed: 0,
+      accepted: 0,
+      in_transit: 0,
+      delivered: 0,
       cancelled: 0
     }
     
@@ -126,16 +127,22 @@ const OrdersScreen = ({ user, onOrderClick, onCreateOrder }) => {
             ⏳ Ожидают ({statusCounts.pending})
           </button>
           <button
-            className={`filter-btn ${statusFilter === 'in_progress' ? 'active' : ''}`}
-            onClick={() => setStatusFilter('in_progress')}
+            className={`filter-btn ${statusFilter === 'accepted' ? 'active' : ''}`}
+            onClick={() => setStatusFilter('accepted')}
           >
-            🚚 В пути ({statusCounts.in_progress})
+            ✅ Принят ({statusCounts.accepted})
           </button>
           <button
-            className={`filter-btn ${statusFilter === 'completed' ? 'active' : ''}`}
-            onClick={() => setStatusFilter('completed')}
+            className={`filter-btn ${statusFilter === 'in_transit' ? 'active' : ''}`}
+            onClick={() => setStatusFilter('in_transit')}
           >
-            ✅ Завершены ({statusCounts.completed})
+            🚚 В пути ({statusCounts.in_transit})
+          </button>
+          <button
+            className={`filter-btn ${statusFilter === 'delivered' ? 'active' : ''}`}
+            onClick={() => setStatusFilter('delivered')}
+          >
+            📦 Доставлен ({statusCounts.delivered})
           </button>
         </div>
       </div>
