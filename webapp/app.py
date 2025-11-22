@@ -92,6 +92,7 @@ def index():
         with open(react_build_path, 'r', encoding='utf-8') as f:
             html = f.read()
         # Заменяем пути на статические файлы Flask
+        # Сначала общая замена (чтобы избежать двойной замены)
         html = html.replace('href="/', 'href="/static/react/')
         html = html.replace('src="/', 'src="/static/react/')
         return html
@@ -102,11 +103,11 @@ def index():
             <head>
                 <meta charset="UTF-8">
                 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                <title>Логистическая платформа</title>
+                <title>Платформа доставки</title>
                 <script src="https://telegram.org/js/telegram-web-app.js"></script>
             </head>
             <body style="font-family: Arial; padding: 40px; text-align: center; background: #0f172a; color: #f1f5f9;">
-                <h1>🚚 Логистическая платформа</h1>
+                <h1>🚚 Платформа доставки</h1>
                 <p>React приложение не собрано.</p>
                 <p>Запустите: <code style="background: #1e293b; padding: 10px; border-radius: 8px; display: block; margin: 20px auto; max-width: 500px;">cd webapp/react-app && npm install && npm run build</code></p>
                 <p>Или используйте скрипт: <code style="background: #1e293b; padding: 10px; border-radius: 8px;">./build_react.sh</code></p>
@@ -154,24 +155,55 @@ def auth():
     })
 
 
-@app.route('/api/user', methods=['GET'])
-def get_user():
-    """Получает информацию о текущем пользователе"""
+@app.route('/api/user', methods=['GET', 'PUT'])
+def user():
+    """Получает или обновляет информацию о текущем пользователе"""
     user_id = session.get('user_id')
     if not user_id:
         return jsonify({'error': 'Not authenticated'}), 401
     
-    user = db.get_user(user_id)
-    if not user:
-        return jsonify({'error': 'User not found'}), 404
+    if request.method == 'GET':
+        user = db.get_user(user_id)
+        if not user:
+            return jsonify({'error': 'User not found'}), 404
+        
+        # Получаем дополнительные данные из user_data
+        phone = db.get_user_data(user_id, 'phone') or ''
+        email = db.get_user_data(user_id, 'email') or ''
+        
+        return jsonify({
+            'id': user['user_id'],
+            'user_id': user['user_id'],
+            'username': user['username'],
+            'first_name': user['first_name'],
+            'last_name': user['last_name'],
+            'role': user['role'],
+            'phone': phone,
+            'email': email
+        })
     
-    return jsonify({
-        'id': user['user_id'],
-        'username': user['username'],
-        'first_name': user['first_name'],
-        'last_name': user['last_name'],
-        'role': user['role']
-    })
+    elif request.method == 'PUT':
+        data = request.json
+        user = db.get_user(user_id)
+        if not user:
+            return jsonify({'error': 'User not found'}), 404
+        
+        # Обновляем основные данные
+        db.add_user(
+            user_id=user_id,
+            username=data.get('username', user.get('username')),
+            first_name=data.get('first_name', user.get('first_name')),
+            last_name=data.get('last_name', user.get('last_name')),
+            role=user.get('role', 'client')
+        )
+        
+        # Сохраняем дополнительные данные
+        if 'phone' in data:
+            db.save_user_data(user_id, 'phone', data['phone'])
+        if 'email' in data:
+            db.save_user_data(user_id, 'email', data['email'])
+        
+        return jsonify({'success': True, 'message': 'Profile updated'})
 
 
 @app.route('/api/orders', methods=['GET', 'POST'])
@@ -330,6 +362,60 @@ def get_tracking(order_id):
     
     tracking = db.get_order_tracking(order_id)
     return jsonify({'tracking': tracking})
+
+
+@app.route('/api/orders/<int:order_id>/contact-logist', methods=['POST'])
+def contact_logist(order_id):
+    """Создает тикет для связи клиента с менеджером"""
+    user_id = session.get('user_id')
+    if not user_id:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    order = db.get_order(order_id)
+    if not order:
+        return jsonify({'error': 'Order not found'}), 404
+    
+    user = db.get_user(user_id)
+    if user['role'] != UserRole.CLIENT or order['client_id'] != user_id:
+        return jsonify({'error': 'Access denied'}), 403
+    
+    # Получаем менеджера заказа или первого доступного
+    manager_id = order.get('manager_id')
+    if not manager_id:
+        managers = db.get_all_users(role=UserRole.MANAGER)
+        if not managers:
+            return jsonify({'error': 'No managers available'}), 404
+        manager_id = managers[0]['user_id']
+    
+    # Создаем тикет для связи
+    ticket_id = db.create_ticket(order_id, manager_id)
+    
+    # Отправляем уведомление в группу
+    try:
+        from utils.telegram_logger import send_log_sync, format_ticket_notification, init_log_group
+        from config import LOG_GROUP_ID
+        
+        if LOG_GROUP_ID:
+            init_log_group(LOG_GROUP_ID)
+            ticket_data = {
+                'id': ticket_id,
+                'order_id': order_id,
+                'client_id': user_id,
+                'manager_id': manager_id,
+                'description': f'Клиент запросил связь по заказу #{order_id}',
+                'status': 'new'
+            }
+            message = format_ticket_notification(ticket_data)
+            send_log_sync(message, parse_mode='HTML')
+    except Exception as e:
+        import logging
+        logging.error(f"Ошибка отправки уведомления о тикете: {e}")
+    
+    return jsonify({
+        'success': True,
+        'ticket_id': ticket_id,
+        'message': 'Ticket created. Manager will contact you soon.'
+    })
 
 
 @app.route('/api/payments', methods=['POST'])

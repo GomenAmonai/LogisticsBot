@@ -20,7 +20,7 @@ def get_admin_menu(webapp_url: str = None) -> InlineKeyboardMarkup:
             InlineKeyboardButton("📦 Все заказы", callback_data="admin_orders")
         ],
         [
-            InlineKeyboardButton("👨‍💼 Управление менеджерами", callback_data="admin_managers"),
+            InlineKeyboardButton("👨‍💼 Управление менеджерами", callback_data="admin_list_managers"),
             InlineKeyboardButton("📊 Статистика", callback_data="admin_stats")
         ],
         [

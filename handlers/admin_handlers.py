@@ -189,6 +189,44 @@ async def back_to_admin_menu_handler(update: Update, context: ContextTypes.DEFAU
     )
 
 
+async def admin_set_role_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Обработчик назначения роли пользователю"""
+    query = update.callback_query
+    await query.answer()
+    
+    user_dict, role = check_user_role(update, db)
+    
+    if role != UserRole.ADMIN:
+        await query.answer("❌ У вас нет доступа к этой функции", show_alert=True)
+        return
+    
+    message = "➕ Назначить роль\n\nОтправьте команду в формате:\n/setrole <user_id> <role>\n\nРоли: client, manager, admin"
+    
+    await query.edit_message_text(
+        text=message,
+        reply_markup=get_admin_panel_menu()
+    )
+
+
+async def admin_find_user_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Обработчик поиска пользователя"""
+    query = update.callback_query
+    await query.answer()
+    
+    user_dict, role = check_user_role(update, db)
+    
+    if role != UserRole.ADMIN:
+        await query.answer("❌ У вас нет доступа к этой функции", show_alert=True)
+        return
+    
+    message = "🔍 Найти пользователя\n\nОтправьте команду в формате:\n/finduser <user_id> или /finduser @username"
+    
+    await query.edit_message_text(
+        text=message,
+        reply_markup=get_admin_panel_menu()
+    )
+
+
 def register_admin_handlers(application):
     """Регистрирует обработчики для администраторов"""
     application.add_handler(CallbackQueryHandler(admin_users_handler, pattern="^admin_users$"))
@@ -199,5 +237,7 @@ def register_admin_handlers(application):
     application.add_handler(CallbackQueryHandler(admin_profile_handler, pattern="^admin_profile$"))
     application.add_handler(CallbackQueryHandler(admin_system_settings_handler, pattern="^admin_system_settings$"))
     application.add_handler(CallbackQueryHandler(admin_logs_handler, pattern="^admin_logs$"))
+    application.add_handler(CallbackQueryHandler(admin_set_role_handler, pattern="^admin_set_role$"))
+    application.add_handler(CallbackQueryHandler(admin_find_user_handler, pattern="^admin_find_user$"))
     application.add_handler(CallbackQueryHandler(back_to_admin_menu_handler, pattern="^back_to_admin_menu$"))
 

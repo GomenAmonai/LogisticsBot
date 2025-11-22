@@ -7,8 +7,8 @@ const AuthScreen = ({ onAuth }) => {
       <div className="auth-container">
         <div className="auth-header">
           <div className="auth-logo">🚚</div>
-          <h1>Логистическая платформа</h1>
-          <p>Вход через Telegram</p>
+          <h1>Платформа доставки</h1>
+          <p>Связь между клиентами и логистами</p>
         </div>
         
         <div className="auth-content">

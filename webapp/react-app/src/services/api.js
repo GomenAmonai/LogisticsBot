@@ -71,3 +71,25 @@ export const createPayment = async (paymentData) => {
   return response.json()
 }
 
+export const updateUserProfile = async (profileData) => {
+  const response = await fetch(`${API_BASE}/api/user`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(profileData)
+  })
+  return response.json()
+}
+
+export const getOrderTracking = async (orderId) => {
+  const response = await fetch(`${API_BASE}/api/orders/${orderId}/tracking`)
+  return response.json()
+}
+
+export const contactLogist = async (orderId) => {
+  const response = await fetch(`${API_BASE}/api/orders/${orderId}/contact-logist`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' }
+  })
+  return response.json()
+}
+
