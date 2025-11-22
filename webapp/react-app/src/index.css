@@ -35,8 +35,16 @@
   --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
   --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.6);
   
+  /* Цветные тени для интерактивных элементов */
+  --shadow-primary-sm: 0 2px 8px rgba(99, 102, 241, 0.3);
+  --shadow-primary-md: 0 4px 15px rgba(99, 102, 241, 0.3);
+  --shadow-primary-lg: 0 4px 15px rgba(99, 102, 241, 0.4);
+  
   /* Focus shadow */
   --focus-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+  
+  /* Градиент для map placeholder */
+  --map-gradient: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%);
 }
 
 [data-theme="light"] {
@@ -59,6 +67,14 @@
   --shadow-md: 0 4px 6px -1px rgba(61, 40, 23, 0.15);
   --shadow-lg: 0 10px 15px -3px rgba(61, 40, 23, 0.2);
   --shadow-xl: 0 20px 25px -5px rgba(61, 40, 23, 0.25);
+  
+  /* Цветные тени для интерактивных элементов (светлая тема) */
+  --shadow-primary-sm: 0 2px 8px rgba(139, 111, 71, 0.3);
+  --shadow-primary-md: 0 4px 15px rgba(139, 111, 71, 0.3);
+  --shadow-primary-lg: 0 4px 15px rgba(139, 111, 71, 0.4);
+  
+  /* Градиент для map placeholder (светлая тема) */
+  --map-gradient: linear-gradient(135deg, rgba(139, 111, 71, 0.1) 0%, rgba(107, 85, 53, 0.1) 100%);
 }
 
 body {

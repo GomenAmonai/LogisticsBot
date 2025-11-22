@@ -36,12 +36,12 @@
   align-items: center;
   justify-content: center;
   transition: all 0.3s ease;
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-primary-sm);
 }
 
 .btn-create-order:hover {
   transform: scale(1.1);
-  box-shadow: var(--shadow-lg);
+  box-shadow: var(--shadow-primary-lg);
 }
 
 .btn-create-order:active {
@@ -119,7 +119,7 @@
   background: var(--gradient-primary);
   border-color: var(--primary);
   color: white;
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-primary-sm);
 }
 
 .orders-content {
