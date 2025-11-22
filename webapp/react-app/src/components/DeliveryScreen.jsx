@@ -15,9 +15,7 @@ const DeliveryScreen = ({ user, selectedOrder: initialOrder, onBack }) => {
   }, [])
 
   useEffect(() => {
-    if (initialOrder) {
-      setSelectedOrder(initialOrder)
-    }
+    setSelectedOrder(initialOrder || null)
   }, [initialOrder])
 
   useEffect(() => {
