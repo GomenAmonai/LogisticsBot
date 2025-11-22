@@ -38,6 +38,21 @@ flask_logger.setLevel(logging.WARNING)
 app_logger = logging.getLogger(__name__)
 
 
+def user_can_access_order(user: dict, order: dict) -> bool:
+    """Проверяет, может ли пользователь получить доступ к заказу"""
+    if not user or not order:
+        return False
+    role = user.get('role')
+    user_id = user.get('user_id')
+    if role == UserRole.ADMIN:
+        return True
+    if role == UserRole.CLIENT and order.get('client_id') == user_id:
+        return True
+    if role == UserRole.MANAGER and order.get('manager_id') == user_id:
+        return True
+    return False
+
+
 def verify_telegram_data(init_data: str) -> dict:
     """Проверяет данные от Telegram WebApp"""
     try:
@@ -220,13 +235,19 @@ def orders():
     
     user = db.get_user(user_id)
     role = user['role']
+    order_type = request.args.get('type')
     
     if request.method == 'GET':
         # Получаем заказы в зависимости от роли
         if role == UserRole.CLIENT:
             orders_list = db.get_user_orders(user_id, role)
         elif role == UserRole.MANAGER:
-            orders_list = db.get_user_orders(user_id, role)
+            if order_type == 'incoming':
+                orders_list = db.get_incoming_orders()
+            elif order_type in ('assigned', 'my', 'mine'):
+                orders_list = db.get_manager_assigned_orders(user_id)
+            else:
+                orders_list = db.get_manager_assigned_orders(user_id)
         else:  # ADMIN
             orders_list = db.get_user_orders(0, role)
         
@@ -283,6 +304,160 @@ def get_order(order_id):
     order['tracking'] = tracking
     
     return jsonify({'order': dict(order)})
+
+
+@app.route('/api/orders/<int:order_id>/assign', methods=['POST'])
+def assign_order(order_id):
+    """Назначает заказ менеджеру"""
+    user_id = session.get('user_id')
+    if not user_id:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    user = db.get_user(user_id)
+    if user['role'] != UserRole.MANAGER:
+        return jsonify({'error': 'Only managers can assign orders'}), 403
+    
+    order = db.get_order(order_id)
+    if not order:
+        return jsonify({'error': 'Order not found'}), 404
+    
+    if order.get('manager_id') and order['manager_id'] != user_id:
+        return jsonify({'error': 'Order already assigned'}), 400
+    
+    db.assign_order_to_manager(order_id, user_id)
+    db.update_order_status(order_id, 'accepted', user_id)
+    
+    return jsonify({'success': True})
+
+
+@app.route('/api/chat/<int:order_id>', methods=['GET'])
+def get_chat(order_id):
+    """Возвращает сообщения чата по заказу"""
+    user_id = session.get('user_id')
+    if not user_id:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    user = db.get_user(user_id)
+    order = db.get_order(order_id)
+    if not order:
+        return jsonify({'error': 'Order not found'}), 404
+    
+    if not user_can_access_order(user, order):
+        return jsonify({'error': 'Access denied'}), 403
+    
+    try:
+        limit = min(int(request.args.get('limit', 100)), 200)
+        offset = max(int(request.args.get('offset', 0)), 0)
+    except ValueError:
+        return jsonify({'error': 'Invalid pagination params'}), 400
+    
+    messages = db.get_chat_messages(order_id, limit=limit, offset=offset)
+    return jsonify({'order': order, 'messages': messages})
+
+
+@app.route('/api/chat/<int:order_id>/send', methods=['POST'])
+def send_chat_message(order_id):
+    """Отправляет сообщение в чат заказа"""
+    user_id = session.get('user_id')
+    if not user_id:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    user = db.get_user(user_id)
+    order = db.get_order(order_id)
+    if not order:
+        return jsonify({'error': 'Order not found'}), 404
+    
+    if not user_can_access_order(user, order):
+        return jsonify({'error': 'Access denied'}), 403
+    
+    data = request.json or {}
+    message = (data.get('message') or '').strip()
+    if not message:
+        return jsonify({'error': 'Message is required'}), 400
+    
+    if len(message) > 2000:
+        return jsonify({'error': 'Message is too long'}), 400
+    
+    db.add_chat_message(order_id, user_id, user['role'], message)
+    
+    return jsonify({'success': True})
+
+
+@app.route('/api/orders/<int:order_id>/offer', methods=['POST'])
+def create_order_offer(order_id):
+    """Создает или обновляет оферту для заказа"""
+    user_id = session.get('user_id')
+    if not user_id:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    user = db.get_user(user_id)
+    if user['role'] not in [UserRole.MANAGER, UserRole.ADMIN]:
+        return jsonify({'error': 'Only managers can send offers'}), 403
+    
+    order = db.get_order(order_id)
+    if not order:
+        return jsonify({'error': 'Order not found'}), 404
+    
+    if user['role'] == UserRole.MANAGER and order.get('manager_id') not in (None, user_id):
+        return jsonify({'error': 'Order assigned to another manager'}), 403
+    
+    data = request.json or {}
+    try:
+        price = float(data.get('offer_price') or data.get('price'))
+        delivery_days = int(data.get('offer_delivery_days') or data.get('delivery_days'))
+    except (TypeError, ValueError):
+        return jsonify({'error': 'Offer price and delivery days are required'}), 400
+    
+    currency = (data.get('offer_currency') or data.get('currency') or 'RUB').upper()
+    comment = data.get('offer_comment') or data.get('comment') or ''
+    
+    if price <= 0 or delivery_days <= 0:
+        return jsonify({'error': 'Offer values must be positive'}), 400
+    
+    success = db.set_order_offer(
+        order_id=order_id,
+        manager_id=user_id,
+        price=price,
+        currency=currency,
+        delivery_days=delivery_days,
+        comment=comment,
+        status='sent'
+    )
+    
+    if not success:
+        return jsonify({'error': 'Failed to save offer'}), 500
+    
+    updated_order = db.get_order(order_id)
+    return jsonify({'success': True, 'order': updated_order})
+
+
+@app.route('/api/orders/<int:order_id>/accept-offer', methods=['POST'])
+def accept_order_offer(order_id):
+    """Принимает или отклоняет оферту"""
+    user_id = session.get('user_id')
+    if not user_id:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    user = db.get_user(user_id)
+    order = db.get_order(order_id)
+    if not order:
+        return jsonify({'error': 'Order not found'}), 404
+    
+    if user['role'] == UserRole.CLIENT and order.get('client_id') != user_id:
+        return jsonify({'error': 'Access denied'}), 403
+    
+    if user['role'] not in [UserRole.CLIENT, UserRole.ADMIN]:
+        return jsonify({'error': 'Only clients can accept offers'}), 403
+    
+    data = request.json or {}
+    decision = (data.get('decision') or 'accept').lower()
+    status = 'accepted' if decision == 'accept' else 'rejected'
+    
+    success = db.update_offer_status(order_id, status)
+    if not success:
+        return jsonify({'error': 'Failed to update offer status'}), 500
+    
+    return jsonify({'success': True, 'offer_status': status})
 
 
 @app.route('/api/orders/<int:order_id>/status', methods=['PUT'])

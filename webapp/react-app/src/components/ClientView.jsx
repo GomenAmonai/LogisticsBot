@@ -6,11 +6,15 @@ import ProfileScreen from './ProfileScreen'
 import DeliveryScreen from './DeliveryScreen'
 import SettingsScreen from './SettingsScreen'
 import CreateOrderScreen from './CreateOrderScreen'
+import ChatScreen from './ChatScreen'
+import OfferScreen from './OfferScreen'
 
 const ClientView = ({ user, onLogout }) => {
   const [activeTab, setActiveTab] = useState('home')
   const [showCreateOrder, setShowCreateOrder] = useState(false)
   const [selectedOrder, setSelectedOrder] = useState(null)
+  const [chatOrder, setChatOrder] = useState(null)
+  const [offerOrder, setOfferOrder] = useState(null)
 
   const handleOrderClick = (order) => {
     setSelectedOrder(order)
@@ -28,6 +32,29 @@ const ClientView = ({ user, onLogout }) => {
   }
 
   const renderScreen = () => {
+    if (chatOrder) {
+      return (
+        <ChatScreen
+          order={chatOrder}
+          user={user}
+          onBack={() => setChatOrder(null)}
+        />
+      )
+    }
+
+    if (offerOrder) {
+      return (
+        <OfferScreen
+          order={offerOrder}
+          onBack={() => setOfferOrder(null)}
+          onDecision={() => {
+            setOfferOrder(null)
+            setRefreshKey((prev) => prev + 1)
+          }}
+        />
+      )
+    }
+
     if (showCreateOrder) {
       return (
         <CreateOrderScreen
@@ -65,6 +92,8 @@ const ClientView = ({ user, onLogout }) => {
             user={user}
             selectedOrder={selectedOrder}
             onBack={() => setSelectedOrder(null)}
+            onOpenChat={(order) => setChatOrder(order)}
+            onViewOffer={(order) => setOfferOrder(order)}
           />
         )
       case 'settings':

@@ -81,12 +81,31 @@ class Database:
                 payment_status TEXT DEFAULT 'unpaid',
                 payment_method TEXT,
                 tracking_number TEXT UNIQUE,
+                offer_price REAL,
+                offer_currency TEXT,
+                offer_delivery_days INTEGER,
+                offer_comment TEXT,
+                offer_status TEXT DEFAULT 'draft',
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (client_id) REFERENCES users(user_id),
                 FOREIGN KEY (manager_id) REFERENCES users(user_id)
             )
         ''')
+        
+        # Добавляем колонки оферты, если отсутствуют
+        offer_columns = [
+            ("offer_price", "REAL"),
+            ("offer_currency", "TEXT"),
+            ("offer_delivery_days", "INTEGER"),
+            ("offer_comment", "TEXT"),
+            ("offer_status", "TEXT DEFAULT 'draft'")
+        ]
+        for column_name, column_type in offer_columns:
+            try:
+                cursor.execute(f'ALTER TABLE orders ADD COLUMN {column_name} {column_type}')
+            except sqlite3.OperationalError:
+                pass
         
         # Создаем таблицу для тикетов (назначение заказов менеджерам)
         cursor.execute('''
@@ -142,6 +161,19 @@ class Database:
                 is_default INTEGER DEFAULT 0,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (user_id) REFERENCES users(user_id)
+            )
+        ''')
+        
+        # Таблица сообщений чата
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS chat_messages (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                order_id INTEGER NOT NULL,
+                sender_id INTEGER NOT NULL,
+                sender_role TEXT NOT NULL,
+                message TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (order_id) REFERENCES orders(id)
             )
         ''')
         
@@ -814,3 +846,80 @@ class Database:
         rows = cursor.fetchall()
         conn.close()
         return [dict(row) for row in rows]
+
+    def get_incoming_orders(self) -> List[dict]:
+        """Возвращает заказы без назначенного менеджера"""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        cursor.execute('SELECT * FROM orders WHERE manager_id IS NULL ORDER BY created_at DESC')
+        rows = cursor.fetchall()
+        conn.close()
+        return [dict(row) for row in rows]
+    
+    def get_manager_assigned_orders(self, manager_id: int) -> List[dict]:
+        """Возвращает заказы, назначенные конкретному менеджеру"""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        cursor.execute('SELECT * FROM orders WHERE manager_id = ? ORDER BY created_at DESC', (manager_id,))
+        rows = cursor.fetchall()
+        conn.close()
+        return [dict(row) for row in rows]
+    
+    def add_chat_message(self, order_id: int, sender_id: int, sender_role: str, message: str) -> int:
+        """Добавляет сообщение в чат заказа"""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        cursor.execute('''
+            INSERT INTO chat_messages (order_id, sender_id, sender_role, message)
+            VALUES (?, ?, ?, ?)
+        ''', (order_id, sender_id, sender_role, message))
+        message_id = cursor.lastrowid
+        conn.commit()
+        conn.close()
+        return message_id
+    
+    def get_chat_messages(self, order_id: int, limit: int = 100, offset: int = 0) -> List[dict]:
+        """Возвращает сообщения чата заказа"""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        cursor.execute('''
+            SELECT * FROM chat_messages
+            WHERE order_id = ?
+            ORDER BY created_at ASC
+            LIMIT ? OFFSET ?
+        ''', (order_id, limit, offset))
+        rows = cursor.fetchall()
+        conn.close()
+        return [dict(row) for row in rows]
+    
+    def set_order_offer(self, order_id: int, manager_id: int, price: float,
+                        currency: str, delivery_days: int, comment: str,
+                        status: str = 'sent') -> bool:
+        """Устанавливает оферту по заказу"""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        cursor.execute('''
+            UPDATE orders
+            SET offer_price = ?, offer_currency = ?, offer_delivery_days = ?,
+                offer_comment = ?, offer_status = ?, manager_id = COALESCE(manager_id, ?),
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = ?
+        ''', (price, currency, delivery_days, comment, status, manager_id, order_id))
+        conn.commit()
+        success = cursor.rowcount > 0
+        conn.close()
+        return success
+    
+    def update_offer_status(self, order_id: int, status: str) -> bool:
+        """Обновляет статус оферты"""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        cursor.execute('''
+            UPDATE orders
+            SET offer_status = ?, updated_at = CURRENT_TIMESTAMP
+            WHERE id = ?
+        ''', (status, order_id))
+        conn.commit()
+        success = cursor.rowcount > 0
+        conn.close()
+        return success

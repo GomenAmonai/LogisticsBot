@@ -1,0 +1,40 @@
+.offer-editor {
+  padding: 20px;
+  min-height: 100%;
+  background: linear-gradient(180deg, #0f172a 0%, #111827 100%);
+  color: #f8fafc;
+}
+
+.offer-form {
+  margin-top: 20px;
+  background: rgba(15, 23, 42, 0.65);
+  padding: 20px;
+  border-radius: 16px;
+  border: 1px solid rgba(96, 165, 250, 0.2);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.offer-form .form-group label {
+  display: block;
+  margin-bottom: 6px;
+  color: rgba(248, 250, 252, 0.85);
+}
+
+.offer-form input,
+.offer-form textarea {
+  width: 100%;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
+  padding: 12px 14px;
+  background: rgba(15, 23, 42, 0.4);
+  color: inherit;
+}
+
+.offer-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+

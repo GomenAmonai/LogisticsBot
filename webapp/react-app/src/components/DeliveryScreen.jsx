@@ -4,7 +4,7 @@ import { getOrders, getOrderTracking, contactLogist } from '../services/api'
 import OrderCard from './OrderCard'
 import { useTheme } from '../contexts/ThemeContext'
 
-const DeliveryScreen = ({ user, selectedOrder: initialOrder, onBack }) => {
+const DeliveryScreen = ({ user, selectedOrder: initialOrder, onBack, onOpenChat, onViewOffer }) => {
   const { theme } = useTheme()
   const [orders, setOrders] = useState([])
   const [selectedOrder, setSelectedOrder] = useState(initialOrder || null)
@@ -221,6 +221,25 @@ const DeliveryScreen = ({ user, selectedOrder: initialOrder, onBack }) => {
               </p>
             </div>
           )}
+
+          <div className="delivery-actions">
+            {onOpenChat && selectedOrder.manager_id && (
+              <button
+                className="btn btn-secondary"
+                onClick={() => onOpenChat(selectedOrder)}
+              >
+                💬 Открыть чат
+              </button>
+            )}
+            {onViewOffer && selectedOrder.offer_status && selectedOrder.offer_status !== 'draft' && (
+              <button
+                className="btn btn-primary"
+                onClick={() => onViewOffer(selectedOrder)}
+              >
+                📄 Смотреть оферту
+              </button>
+            )}
+          </div>
         </div>
       </div>
     )

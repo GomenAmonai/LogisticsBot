@@ -1,0 +1,89 @@
+.offer-screen {
+  padding: 20px;
+  min-height: 100%;
+  background: linear-gradient(180deg, #0f172a, #1e1b4b);
+  color: #f8fafc;
+}
+
+.offer-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.offer-card {
+  background: rgba(15, 23, 42, 0.7);
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.offer-card.loading,
+.offer-card.empty {
+  text-align: center;
+  color: rgba(248, 250, 252, 0.7);
+}
+
+.offer-status {
+  text-transform: uppercase;
+  font-size: 12px;
+  letter-spacing: 1px;
+  margin-bottom: 16px;
+  color: #a5b4fc;
+}
+
+.offer-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  font-size: 16px;
+}
+
+.offer-row span {
+  color: rgba(248, 250, 252, 0.7);
+}
+
+.offer-comment {
+  margin-top: 16px;
+  padding: 12px;
+  border-radius: 12px;
+  background: rgba(15, 23, 42, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.offer-comment span {
+  font-size: 14px;
+  color: rgba(248, 250, 252, 0.7);
+}
+
+.offer-comment p {
+  margin: 8px 0 0;
+  line-height: 1.5;
+}
+
+.offer-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.offer-note {
+  margin-top: 20px;
+  padding: 12px;
+  border-radius: 12px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.offer-note.success {
+  background: rgba(16, 185, 129, 0.2);
+  color: #6ee7b7;
+}
+
+.offer-note.danger {
+  background: rgba(248, 113, 113, 0.15);
+  color: #fca5a5;
+}
+
