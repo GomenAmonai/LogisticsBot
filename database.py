@@ -895,16 +895,29 @@ class Database:
     def set_order_offer(self, order_id: int, manager_id: int, price: float,
                         currency: str, delivery_days: int, comment: str,
                         status: str = 'sent') -> bool:
-        """Устанавливает оферту по заказу"""
+        """
+        Устанавливает оферту по заказу.
+        Обновление проходит только если заказ еще не назначен или принадлежит текущему менеджеру.
+        """
         conn = self.get_connection()
         cursor = conn.cursor()
         cursor.execute('''
             UPDATE orders
             SET offer_price = ?, offer_currency = ?, offer_delivery_days = ?,
-                offer_comment = ?, offer_status = ?, manager_id = COALESCE(manager_id, ?),
+                offer_comment = ?, offer_status = ?,
+                manager_id = CASE WHEN manager_id IS NULL THEN ? ELSE manager_id END,
                 updated_at = CURRENT_TIMESTAMP
-            WHERE id = ?
-        ''', (price, currency, delivery_days, comment, status, manager_id, order_id))
+            WHERE id = ? AND (manager_id IS NULL OR manager_id = ?)
+        ''', (
+            price,
+            currency,
+            delivery_days,
+            comment,
+            status,
+            manager_id,
+            order_id,
+            manager_id
+        ))
         conn.commit()
         success = cursor.rowcount > 0
         conn.close()

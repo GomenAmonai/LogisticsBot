@@ -425,7 +425,7 @@ def create_order_offer(order_id):
     )
     
     if not success:
-        return jsonify({'error': 'Failed to save offer'}), 500
+        return jsonify({'error': 'Order already assigned to another manager'}), 409
     
     updated_order = db.get_order(order_id)
     return jsonify({'success': True, 'order': updated_order})
