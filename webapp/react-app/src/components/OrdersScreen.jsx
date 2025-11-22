@@ -3,13 +3,20 @@ import './OrdersScreen.css'
 import { getOrders } from '../services/api'
 import OrderCard from './OrderCard'
 
-const OrdersScreen = ({ user }) => {
+const OrdersScreen = ({ user, onOrderClick, onCreateOrder }) => {
   const [orders, setOrders] = useState([])
+  const [filteredOrders, setFilteredOrders] = useState([])
   const [loading, setLoading] = useState(true)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [statusFilter, setStatusFilter] = useState('all')
 
   useEffect(() => {
     loadOrders()
   }, [])
+
+  useEffect(() => {
+    filterOrders()
+  }, [orders, searchQuery, statusFilter])
 
   const loadOrders = async () => {
     try {
@@ -23,6 +30,49 @@ const OrdersScreen = ({ user }) => {
     }
   }
 
+  const filterOrders = () => {
+    let filtered = [...orders]
+
+    // Фильтр по статусу
+    if (statusFilter !== 'all') {
+      filtered = filtered.filter(order => order.status === statusFilter)
+    }
+
+    // Поиск
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase()
+      filtered = filtered.filter(order => 
+        order.description?.toLowerCase().includes(query) ||
+        order.from_address?.toLowerCase().includes(query) ||
+        order.to_address?.toLowerCase().includes(query) ||
+        order.tracking_number?.toLowerCase().includes(query) ||
+        order.id.toString().includes(query)
+      )
+    }
+
+    setFilteredOrders(filtered)
+  }
+
+  const getStatusCounts = () => {
+    const counts = {
+      all: orders.length,
+      pending: 0,
+      in_progress: 0,
+      completed: 0,
+      cancelled: 0
+    }
+    
+    orders.forEach(order => {
+      if (counts[order.status] !== undefined) {
+        counts[order.status]++
+      }
+    })
+    
+    return counts
+  }
+
+  const statusCounts = getStatusCounts()
+
   if (loading) {
     return (
       <div className="orders-screen">
@@ -34,21 +84,89 @@ const OrdersScreen = ({ user }) => {
   return (
     <div className="orders-screen">
       <div className="orders-header">
-        <h1>Мои заказы</h1>
-        <p className="orders-subtitle">Все ваши заказы в одном месте</p>
+        <div className="header-top">
+          <h1>Мои заказы</h1>
+          <div className="header-actions">
+            {onCreateOrder && (
+              <button
+                className="btn-create-order"
+                onClick={onCreateOrder}
+                title="Создать заказ"
+              >
+                ➕
+              </button>
+            )}
+            <div className="orders-count">{orders.length} заказов</div>
+          </div>
+        </div>
+        
+        {/* Поиск */}
+        <div className="search-container">
+          <input
+            type="text"
+            className="search-input"
+            placeholder="🔍 Поиск по описанию, адресу, трек-номеру..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
+
+        {/* Фильтры по статусу */}
+        <div className="status-filters">
+          <button
+            className={`filter-btn ${statusFilter === 'all' ? 'active' : ''}`}
+            onClick={() => setStatusFilter('all')}
+          >
+            Все ({statusCounts.all})
+          </button>
+          <button
+            className={`filter-btn ${statusFilter === 'pending' ? 'active' : ''}`}
+            onClick={() => setStatusFilter('pending')}
+          >
+            ⏳ Ожидают ({statusCounts.pending})
+          </button>
+          <button
+            className={`filter-btn ${statusFilter === 'in_progress' ? 'active' : ''}`}
+            onClick={() => setStatusFilter('in_progress')}
+          >
+            🚚 В пути ({statusCounts.in_progress})
+          </button>
+          <button
+            className={`filter-btn ${statusFilter === 'completed' ? 'active' : ''}`}
+            onClick={() => setStatusFilter('completed')}
+          >
+            ✅ Завершены ({statusCounts.completed})
+          </button>
+        </div>
       </div>
 
       <div className="orders-content">
-        {orders.length === 0 ? (
+        {filteredOrders.length === 0 ? (
           <div className="empty-state">
-            <div className="empty-icon">📦</div>
-            <h2>У вас пока нет заказов</h2>
-            <p>Создайте первый заказ через меню</p>
+            <div className="empty-icon">
+              {searchQuery || statusFilter !== 'all' ? '🔍' : '📦'}
+            </div>
+            <h2>
+              {searchQuery || statusFilter !== 'all' 
+                ? 'Заказы не найдены' 
+                : 'У вас пока нет заказов'}
+            </h2>
+            <p>
+              {searchQuery || statusFilter !== 'all'
+                ? 'Попробуйте изменить фильтры или поисковый запрос'
+                : 'Создайте первый заказ через меню'}
+            </p>
           </div>
         ) : (
           <div className="orders-grid">
-            {orders.map(order => (
-              <OrderCard key={order.id} order={order} />
+            {filteredOrders.map(order => (
+              <div 
+                key={order.id} 
+                onClick={() => onOrderClick && onOrderClick(order)}
+                style={{ cursor: onOrderClick ? 'pointer' : 'default' }}
+              >
+                <OrderCard order={order} />
+              </div>
             ))}
           </div>
         )}
@@ -58,4 +176,3 @@ const OrdersScreen = ({ user }) => {
 }
 
 export default OrdersScreen
-

@@ -76,8 +76,14 @@ const ProfileScreen = ({ user }) => {
         <div className="profile-avatar">
           {profile.first_name?.[0]?.toUpperCase() || '👤'}
         </div>
-        <h2>{profile.first_name || 'Пользователь'}</h2>
+        <h2>
+          {profile.first_name || 'Пользователь'}
+          {profile.last_name && ` ${profile.last_name}`}
+        </h2>
         <p className="profile-role">Клиент</p>
+        {profile.username && (
+          <p className="profile-username">@{profile.username}</p>
+        )}
       </div>
 
       <div className="profile-content">

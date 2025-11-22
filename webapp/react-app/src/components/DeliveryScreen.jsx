@@ -3,9 +3,9 @@ import './DeliveryScreen.css'
 import { getOrders, getOrderTracking, contactLogist } from '../services/api'
 import OrderCard from './OrderCard'
 
-const DeliveryScreen = ({ user }) => {
+const DeliveryScreen = ({ user, selectedOrder: initialOrder }) => {
   const [orders, setOrders] = useState([])
-  const [selectedOrder, setSelectedOrder] = useState(null)
+  const [selectedOrder, setSelectedOrder] = useState(initialOrder || null)
   const [tracking, setTracking] = useState(null)
   const [loading, setLoading] = useState(true)
   const [contacting, setContacting] = useState(false)
@@ -13,6 +13,12 @@ const DeliveryScreen = ({ user }) => {
   useEffect(() => {
     loadOrders()
   }, [])
+
+  useEffect(() => {
+    if (initialOrder) {
+      setSelectedOrder(initialOrder)
+    }
+  }, [initialOrder])
 
   useEffect(() => {
     if (selectedOrder) {
@@ -108,18 +114,48 @@ const DeliveryScreen = ({ user }) => {
             </div>
 
             <div className="order-info">
+              {selectedOrder.description && (
+                <div className="info-row">
+                  <span className="info-label">Описание:</span>
+                  <span className="info-value">{selectedOrder.description}</span>
+                </div>
+              )}
               <div className="info-row">
                 <span className="info-label">Откуда:</span>
                 <span className="info-value">{selectedOrder.from_address || 'Не указано'}</span>
               </div>
+              {selectedOrder.from_contact && (
+                <div className="info-row">
+                  <span className="info-label">Контакт отправителя:</span>
+                  <span className="info-value">{selectedOrder.from_contact}</span>
+                </div>
+              )}
               <div className="info-row">
                 <span className="info-label">Куда:</span>
                 <span className="info-value">{selectedOrder.to_address || 'Не указано'}</span>
               </div>
+              {selectedOrder.to_contact && (
+                <div className="info-row">
+                  <span className="info-label">Контакт получателя:</span>
+                  <span className="info-value">{selectedOrder.to_contact}</span>
+                </div>
+              )}
               {selectedOrder.tracking_number && (
                 <div className="info-row">
                   <span className="info-label">Трек-номер:</span>
                   <span className="info-value tracking-number">{selectedOrder.tracking_number}</span>
+                </div>
+              )}
+              {selectedOrder.weight && (
+                <div className="info-row">
+                  <span className="info-label">Вес:</span>
+                  <span className="info-value">{selectedOrder.weight} кг</span>
+                </div>
+              )}
+              {selectedOrder.price && (
+                <div className="info-row">
+                  <span className="info-label">Цена:</span>
+                  <span className="info-value price">{selectedOrder.price} ₽</span>
                 </div>
               )}
             </div>

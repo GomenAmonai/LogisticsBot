@@ -62,6 +62,16 @@ const SettingsScreen = ({ user, onLogout }) => {
             <span className="setting-label">Поддержка</span>
             <span className="setting-value">support@logistics.com</span>
           </div>
+          
+          <div className="setting-item">
+            <span className="setting-label">Политика конфиденциальности</span>
+            <span className="setting-value">→</span>
+          </div>
+          
+          <div className="setting-item">
+            <span className="setting-label">Условия использования</span>
+            <span className="setting-value">→</span>
+          </div>
         </div>
 
         <div className="settings-section">
