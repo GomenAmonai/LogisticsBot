@@ -12,6 +12,7 @@ from datetime import datetime
 from uuid import uuid4
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for
 from flask_cors import CORS
+from flasgger import Swagger
 from pathlib import Path
 
 # Добавляем корневую директорию в путь
@@ -27,6 +28,7 @@ app = Flask(__name__,
             static_folder='static')
 app.secret_key = os.getenv('FLASK_SECRET_KEY', 'your-secret-key-change-in-production')
 CORS(app)
+swagger = Swagger(app)
 
 db = Database()
 
@@ -215,7 +217,12 @@ def auth():
 
 @app.route('/auth/logout', methods=['POST'])
 def logout():
-    """Очищает серверную сессию"""
+    """Очищает серверную сессию
+    ---
+    responses:
+      200:
+        description: Session cleared
+    """
     user_id = session.get('user_id')
     if user_id:
         db.clear_active_session(user_id)
@@ -653,6 +660,13 @@ def contact_logist(order_id):
 
 @app.route('/api/admin/test/bootstrap', methods=['POST'])
 def admin_bootstrap_data():
+    """
+    Создает демо-данные
+    ---
+    responses:
+      200:
+        description: OK
+    """
     if not ensure_admin_or_token():
         return jsonify({'error': 'Admin access required'}), 403
     
@@ -663,6 +677,13 @@ def admin_bootstrap_data():
 
 @app.route('/api/admin/test/clear', methods=['POST'])
 def admin_clear_data():
+    """
+    Очищает демо-данные
+    ---
+    responses:
+      200:
+        description: OK
+    """
     if not ensure_admin_or_token():
         return jsonify({'error': 'Admin access required'}), 403
     
@@ -672,6 +693,27 @@ def admin_clear_data():
 
 @app.route('/api/admin/test/create-user', methods=['POST'])
 def admin_create_test_user():
+    """
+    Создает тестового пользователя
+    ---
+    parameters:
+      - name: body
+        in: body
+        schema:
+          type: object
+          properties:
+            user_id:
+              type: integer
+            username:
+              type: string
+            first_name:
+              type: string
+            role:
+              type: string
+    responses:
+      200:
+        description: OK
+    """
     if not ensure_admin_or_token():
         return jsonify({'error': 'Admin access required'}), 403
     
@@ -702,6 +744,18 @@ def admin_create_test_user():
 
 @app.route('/api/admin/test/user/<int:target_user_id>', methods=['GET'])
 def admin_get_user(target_user_id):
+    """
+    Возвращает информацию о пользователе
+    ---
+    parameters:
+      - name: target_user_id
+        in: path
+        type: integer
+        required: true
+    responses:
+      200:
+        description: OK
+    """
     if not ensure_admin_or_token():
         return jsonify({'error': 'Admin access required'}), 403
     
@@ -714,6 +768,25 @@ def admin_get_user(target_user_id):
 
 @app.route('/api/admin/test/set-role', methods=['POST'])
 def admin_set_role():
+    """
+    Устанавливает роль пользователю
+    ---
+    parameters:
+      - name: body
+        in: body
+        required: true
+        schema:
+          type: object
+          properties:
+            user_id:
+              type: integer
+            role:
+              type: string
+              enum: ['client', 'manager', 'admin']
+    responses:
+      200:
+        description: OK
+    """
     if not ensure_admin_or_token():
         return jsonify({'error': 'Admin access required'}), 403
     
