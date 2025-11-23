@@ -9,6 +9,7 @@ import hashlib
 import json
 import logging
 from datetime import datetime
+from uuid import uuid4
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for
 from flask_cors import CORS
 from pathlib import Path
@@ -19,6 +20,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from database import Database
 from models.user import UserRole
 from config import BOT_TOKEN
+from utils.test_data import seed_demo_data, clear_demo_data
 
 app = Flask(__name__, 
             template_folder='templates',
@@ -38,6 +40,13 @@ flask_logger.setLevel(logging.WARNING)
 app_logger = logging.getLogger(__name__)
 
 
+def get_current_user():
+    user_id = session.get('user_id')
+    if not user_id:
+        return None
+    return db.get_user(user_id)
+
+
 def user_can_access_order(user: dict, order: dict) -> bool:
     """Проверяет, может ли пользователь получить доступ к заказу"""
     if not user or not order:
@@ -51,6 +60,13 @@ def user_can_access_order(user: dict, order: dict) -> bool:
     if role == UserRole.MANAGER and order.get('manager_id') == user_id:
         return True
     return False
+
+
+def require_admin():
+    user = get_current_user()
+    if not user or user['role'] != UserRole.ADMIN:
+        return None, jsonify({'error': 'Admin access required'}), 403
+    return user, None, None
 
 
 def verify_telegram_data(init_data: str) -> dict:
@@ -168,6 +184,13 @@ def auth():
             'role': user['role']
         }
     })
+
+
+@app.route('/auth/logout', methods=['POST'])
+def logout():
+    """Очищает серверную сессию"""
+    session.clear()
+    return jsonify({'success': True})
 
 
 @app.route('/api/user', methods=['GET', 'PUT'])
@@ -596,6 +619,58 @@ def contact_logist(order_id):
         'ticket_id': ticket_id,
         'message': 'Ticket created. Manager will contact you soon.'
     })
+
+
+@app.route('/api/admin/test/bootstrap', methods=['POST'])
+def admin_bootstrap_data():
+    admin_user, error_response, status = require_admin()
+    if error_response:
+        return error_response, status
+    
+    clear_demo_data(db)
+    summary = seed_demo_data(db)
+    return jsonify({'success': True, 'data': summary})
+
+
+@app.route('/api/admin/test/clear', methods=['POST'])
+def admin_clear_data():
+    admin_user, error_response, status = require_admin()
+    if error_response:
+        return error_response, status
+    
+    clear_demo_data(db)
+    return jsonify({'success': True})
+
+
+@app.route('/api/admin/test/create-user', methods=['POST'])
+def admin_create_test_user():
+    admin_user, error_response, status = require_admin()
+    if error_response:
+        return error_response, status
+    
+    data = request.json or {}
+    role = data.get('role', UserRole.CLIENT)
+    if role not in [UserRole.CLIENT, UserRole.MANAGER, UserRole.ADMIN]:
+        return jsonify({'error': 'Invalid role'}), 400
+    
+    user_id_value = data.get('user_id')
+    if user_id_value:
+        try:
+            user_id = int(user_id_value)
+        except ValueError:
+            return jsonify({'error': 'user_id must be numeric'}), 400
+    else:
+        user_id = int(str(uuid4().int)[-9:])
+    
+    db.add_user(
+        user_id=user_id,
+        username=data.get('username'),
+        first_name=data.get('first_name'),
+        last_name=data.get('last_name'),
+        role=role
+    )
+    
+    return jsonify({'success': True, 'user_id': user_id, 'role': role})
 
 
 @app.route('/api/payments', methods=['POST'])

@@ -4,6 +4,7 @@ import { getOrders, assignOrder } from '../services/api'
 import OrderCard from './OrderCard'
 import ChatScreen from './ChatScreen'
 import OfferEditor from './OfferEditor'
+import UserInfoBar from './UserInfoBar'
 
 const ManagerView = ({ user, onLogout }) => {
   const [activeSection, setActiveSection] = useState('incoming')
@@ -194,6 +195,7 @@ const ManagerView = ({ user, onLogout }) => {
       </nav>
 
       <div className="container">
+        <UserInfoBar user={user} onLogout={onLogout} />
         <h1 className="page-title">Панель логиста</h1>
 
         <div className="tabs manager-tabs">

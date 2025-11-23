@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react'
 import './AdminView.css'
 import { getOrders, getStats } from '../services/api'
 import OrderCard from './OrderCard'
+import AdminTestPanel from './AdminTestPanel'
+import UserInfoBar from './UserInfoBar'
 
 const AdminView = ({ user, onLogout }) => {
   const [orders, setOrders] = useState([])
@@ -39,6 +41,7 @@ const AdminView = ({ user, onLogout }) => {
       </nav>
 
       <div className="container">
+        <UserInfoBar user={user} onLogout={onLogout} />
         <h1 className="page-title">Панель администратора</h1>
         
         <div className="stats-grid">
@@ -61,6 +64,8 @@ const AdminView = ({ user, onLogout }) => {
             ))}
           </div>
         )}
+
+        <AdminTestPanel />
       </div>
     </div>
   )

@@ -153,3 +153,30 @@ export const respondToOffer = async (orderId, decision = 'accept') => {
   return response.json()
 }
 
+export const logout = async () => {
+  await fetch(`${API_BASE}/auth/logout`, { method: 'POST' })
+}
+
+export const adminBootstrapData = async () => {
+  const response = await fetch(`${API_BASE}/api/admin/test/bootstrap`, {
+    method: 'POST'
+  })
+  return response.json()
+}
+
+export const adminClearData = async () => {
+  const response = await fetch(`${API_BASE}/api/admin/test/clear`, {
+    method: 'POST'
+  })
+  return response.json()
+}
+
+export const adminCreateTestUser = async (payload) => {
+  const response = await fetch(`${API_BASE}/api/admin/test/create-user`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  })
+  return response.json()
+}
+

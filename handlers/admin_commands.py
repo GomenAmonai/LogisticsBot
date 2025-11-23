@@ -72,8 +72,47 @@ async def my_role_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 
+async def add_manager_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Быстрое назначение пользователя менеджером по ID"""
+    user_dict, role = check_user_role(update, db)
+    
+    if role != UserRole.ADMIN:
+        await update.message.reply_text("❌ Команда доступна только администраторам.")
+        return
+    
+    if not context.args:
+        await update.message.reply_text("Использование: /add_manager <user_id>")
+        return
+    
+    try:
+        target_user_id = int(context.args[0])
+    except ValueError:
+        await update.message.reply_text("❌ user_id должен быть числом.")
+        return
+    
+    target_user = db.get_user(target_user_id)
+    if not target_user:
+        db.add_user(
+            user_id=target_user_id,
+            role=UserRole.MANAGER
+        )
+        await update.message.reply_text(f"✅ Пользователь {target_user_id} создан с ролью менеджера.")
+        return
+    
+    if target_user.get('role') == UserRole.MANAGER:
+        await update.message.reply_text("ℹ️ Этот пользователь уже менеджер.")
+        return
+    
+    success = db.set_user_role(target_user_id, UserRole.MANAGER)
+    if success:
+        await update.message.reply_text(f"✅ Пользователь {target_user_id} теперь менеджер.")
+    else:
+        await update.message.reply_text("❌ Не удалось обновить роль, попробуйте позже.")
+
+
 def register_admin_commands(application):
     """Регистрирует административные команды"""
     application.add_handler(CommandHandler("set_role", set_role_command))
     application.add_handler(CommandHandler("my_role", my_role_command))
+    application.add_handler(CommandHandler("add_manager", add_manager_command))
 

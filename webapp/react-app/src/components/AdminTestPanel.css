@@ -1,0 +1,46 @@
+.admin-test-panel {
+  margin-top: 32px;
+  padding: 20px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.admin-test-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 16px 0;
+}
+
+.admin-test-form {
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.admin-test-form .form-row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.admin-test-form input,
+.admin-test-form select {
+  flex: 1;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(15, 23, 42, 0.5);
+  color: inherit;
+}
+
+.admin-test-message {
+  margin-top: 16px;
+  padding: 12px;
+  border-radius: 12px;
+  background: rgba(66, 153, 225, 0.15);
+  font-size: 14px;
+}
+

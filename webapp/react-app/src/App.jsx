@@ -5,7 +5,7 @@ import ClientView from './components/ClientView'
 import ManagerView from './components/ManagerView'
 import AdminView from './components/AdminView'
 import LoadingScreen from './components/LoadingScreen'
-import { authUser, getCurrentUser } from './services/api'
+import { authUser, logout } from './services/api'
 
 function App() {
   const [loading, setLoading] = useState(true)
@@ -58,10 +58,16 @@ function App() {
     }
   }
 
-  const handleLogout = () => {
-    localStorage.removeItem('testUser')
-    setUser(null)
-    setAuthenticated(false)
+  const handleLogout = async () => {
+    try {
+      await logout()
+    } catch (error) {
+      console.warn('Ошибка logout', error)
+    } finally {
+      localStorage.removeItem('testUser')
+      setUser(null)
+      setAuthenticated(false)
+    }
   }
 
   if (loading) {

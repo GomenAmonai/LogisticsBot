@@ -5,15 +5,22 @@ from dotenv import load_dotenv
 # Получаем путь к корневой директории проекта
 BASE_DIR = Path(__file__).resolve().parent
 
-# Загружаем .env файл из корневой директории
+# Загружаем .env файл из корневой директории (можно переопределить через переменную)
 env_path = BASE_DIR / '.env'
-load_dotenv(dotenv_path=env_path)
+if os.getenv('SKIP_DOTENV') == '1':
+    pass
+else:
+    try:
+        load_dotenv(dotenv_path=env_path)
+    except PermissionError:
+        # В окружениях без доступа к .env просто пропускаем загрузку
+        pass
 
 # Токен бота из переменных окружения
 BOT_TOKEN = os.getenv('BOT_TOKEN', '')
 
-# Путь к базе данных
-DATABASE_PATH = 'data/bot_database.db'
+# Путь к базе данных (переопределяется через переменную окружения)
+DATABASE_PATH = os.getenv('DATABASE_PATH', 'data/bot_database.db')
 
 # URL для WebApp (можно использовать ngrok или другой сервис для разработки)
 # Приоритет: 1) .env файл, 2) значение ниже, 3) автоматически из Docker

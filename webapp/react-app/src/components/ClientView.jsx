@@ -8,6 +8,7 @@ import SettingsScreen from './SettingsScreen'
 import CreateOrderScreen from './CreateOrderScreen'
 import ChatScreen from './ChatScreen'
 import OfferScreen from './OfferScreen'
+import UserInfoBar from './UserInfoBar'
 
 const ClientView = ({ user, onLogout }) => {
   const [activeTab, setActiveTab] = useState('home')
@@ -112,6 +113,7 @@ const ClientView = ({ user, onLogout }) => {
 
   return (
     <div className="client-view">
+      <UserInfoBar user={user} onLogout={onLogout} />
       {renderScreen()}
       {!showCreateOrder && (
         <BottomNavBar activeTab={activeTab} onTabChange={setActiveTab} />

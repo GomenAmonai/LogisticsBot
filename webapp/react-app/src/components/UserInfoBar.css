@@ -1,0 +1,26 @@
+.user-info-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  margin-bottom: 16px;
+}
+
+.user-info-name {
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.user-info-meta {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.btn-small {
+  padding: 8px 14px;
+  font-size: 14px;
+}
+
