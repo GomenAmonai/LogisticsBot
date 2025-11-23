@@ -20,7 +20,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from database import Database
 from models.user import UserRole
-from config import BOT_TOKEN, TEST_API_TOKEN
+import config
 from utils.test_data import seed_demo_data, clear_demo_data
 
 app = Flask(__name__, 
@@ -30,7 +30,16 @@ app.secret_key = os.getenv('FLASK_SECRET_KEY', 'your-secret-key-change-in-produc
 CORS(app)
 swagger = Swagger(app)
 
-db = Database()
+_db = Database()
+
+
+class DatabaseProxy:
+    def __getattr__(self, item):
+        target = app.config.get('DB_INSTANCE') or _db
+        return getattr(target, item)
+
+
+db = DatabaseProxy()
 
 # Настройка логирования для Flask
 logging.basicConfig(
@@ -78,12 +87,13 @@ def require_admin():
 
 def has_test_token():
     auth_header = request.headers.get('Authorization', '')
-    if not TEST_API_TOKEN:
+    token_value = getattr(config, 'TEST_API_TOKEN', '')
+    if not token_value:
         return False
     if not auth_header.startswith('Bearer '):
         return False
     token = auth_header.split(' ', 1)[1].strip()
-    return token == TEST_API_TOKEN
+    return token == token_value
 
 
 def ensure_admin_or_token():
@@ -97,7 +107,6 @@ def verify_telegram_data(init_data: str) -> dict:
     """Проверяет данные от Telegram WebApp"""
     try:
         from urllib.parse import parse_qsl
-        from config import BOT_TOKEN
         
         parsed_data = dict(parse_qsl(init_data))
         
@@ -110,9 +119,12 @@ def verify_telegram_data(init_data: str) -> dict:
         data_check_string = '\n'.join(f"{k}={v}" for k, v in sorted(parsed_data.items()))
         
         # Создаем секретный ключ
+        bot_token = getattr(config, 'BOT_TOKEN', '')
+        if not bot_token:
+            return None
         secret_key = hmac.new(
             key=b"WebAppData",
-            msg=BOT_TOKEN.encode(),
+            msg=bot_token.encode(),
             digestmod=hashlib.sha256
         ).digest()
         

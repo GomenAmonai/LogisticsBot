@@ -2,23 +2,24 @@ import json
 
 import pytest
 
-from webapp.app import app, db
+from webapp.app import app
 from utils.test_data import seed_demo_data, clear_demo_data, TEST_CLIENT_ID
-import sys
+import config
 
 
 @pytest.fixture
 def client(test_db):
     clear_demo_data(test_db)
     seed_demo_data(test_db)
-    with app.test_client() as client:
-        yield client
+    app.config['DB_INSTANCE'] = test_db
+    with app.test_client() as client_ctx:
+        yield client_ctx
+    app.config.pop('DB_INSTANCE', None)
 
 
 def test_admin_set_role_with_token(client, monkeypatch):
     monkeypatch.setenv('TEST_API_TOKEN', 'secret')
-    if 'config' in sys.modules:
-        sys.modules['config'].TEST_API_TOKEN = 'secret'
+    config.TEST_API_TOKEN = 'secret'
 
     response = client.post(
         '/api/admin/test/set-role',
