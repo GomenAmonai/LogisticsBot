@@ -176,6 +176,15 @@ class Database:
                 FOREIGN KEY (order_id) REFERENCES orders(id)
             )
         ''')
+
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS user_sessions (
+                user_id INTEGER PRIMARY KEY,
+                session_token TEXT,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users(user_id)
+            )
+        ''')
         
         conn.commit()
         conn.close()
@@ -922,6 +931,34 @@ class Database:
         success = cursor.rowcount > 0
         conn.close()
         return success
+
+    def set_active_session(self, user_id: int, token: str) -> None:
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        cursor.execute('''
+            INSERT INTO user_sessions (user_id, session_token, updated_at)
+            VALUES (?, ?, CURRENT_TIMESTAMP)
+            ON CONFLICT(user_id) DO UPDATE SET
+                session_token=excluded.session_token,
+                updated_at=CURRENT_TIMESTAMP
+        ''', (user_id, token))
+        conn.commit()
+        conn.close()
+
+    def get_active_session_token(self, user_id: int) -> Optional[str]:
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        cursor.execute('SELECT session_token FROM user_sessions WHERE user_id = ?', (user_id,))
+        row = cursor.fetchone()
+        conn.close()
+        return row['session_token'] if row else None
+
+    def clear_active_session(self, user_id: int) -> None:
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        cursor.execute('DELETE FROM user_sessions WHERE user_id = ?', (user_id,))
+        conn.commit()
+        conn.close()
     
     def update_offer_status(self, order_id: int, status: str) -> bool:
         """Обновляет статус оферты"""

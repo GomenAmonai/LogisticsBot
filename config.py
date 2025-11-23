@@ -22,6 +22,9 @@ BOT_TOKEN = os.getenv('BOT_TOKEN', '')
 # Путь к базе данных (переопределяется через переменную окружения)
 DATABASE_PATH = os.getenv('DATABASE_PATH', 'data/bot_database.db')
 
+# Тестовый токен для защищенных админских эндпоинтов
+TEST_API_TOKEN = os.getenv('TEST_API_TOKEN', '')
+
 # URL для WebApp (можно использовать ngrok или другой сервис для разработки)
 # Приоритет: 1) .env файл, 2) значение ниже, 3) автоматически из Docker
 WEBAPP_URL = os.getenv('WEBAPP_URL', '')

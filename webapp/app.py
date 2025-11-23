@@ -19,7 +19,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from database import Database
 from models.user import UserRole
-from config import BOT_TOKEN
+from config import BOT_TOKEN, TEST_API_TOKEN
 from utils.test_data import seed_demo_data, clear_demo_data
 
 app = Flask(__name__, 
@@ -44,6 +44,11 @@ def get_current_user():
     user_id = session.get('user_id')
     if not user_id:
         return None
+    stored_token = db.get_active_session_token(user_id)
+    session_token = session.get('session_token')
+    if not stored_token or stored_token != session_token:
+        session.clear()
+        return None
     return db.get_user(user_id)
 
 
@@ -67,6 +72,23 @@ def require_admin():
     if not user or user['role'] != UserRole.ADMIN:
         return None, jsonify({'error': 'Admin access required'}), 403
     return user, None, None
+
+
+def has_test_token():
+    auth_header = request.headers.get('Authorization', '')
+    if not TEST_API_TOKEN:
+        return False
+    if not auth_header.startswith('Bearer '):
+        return False
+    token = auth_header.split(' ', 1)[1].strip()
+    return token == TEST_API_TOKEN
+
+
+def ensure_admin_or_token():
+    if has_test_token():
+        return True
+    user = get_current_user()
+    return bool(user and user['role'] == UserRole.ADMIN)
 
 
 def verify_telegram_data(init_data: str) -> dict:
@@ -175,6 +197,9 @@ def auth():
     session['user_id'] = user_id
     session['user_role'] = user['role']
     session['user_name'] = user['first_name']
+    session_token = str(uuid4())
+    session['session_token'] = session_token
+    db.set_active_session(user_id, session_token)
 
     app_logger.info("Auth success: user_id=%s role=%s", user_id, user['role'])
     
@@ -191,6 +216,9 @@ def auth():
 @app.route('/auth/logout', methods=['POST'])
 def logout():
     """Очищает серверную сессию"""
+    user_id = session.get('user_id')
+    if user_id:
+        db.clear_active_session(user_id)
     session.clear()
     return jsonify({'success': True})
 
@@ -625,9 +653,8 @@ def contact_logist(order_id):
 
 @app.route('/api/admin/test/bootstrap', methods=['POST'])
 def admin_bootstrap_data():
-    admin_user, error_response, status = require_admin()
-    if error_response:
-        return error_response, status
+    if not ensure_admin_or_token():
+        return jsonify({'error': 'Admin access required'}), 403
     
     clear_demo_data(db)
     summary = seed_demo_data(db)
@@ -636,9 +663,8 @@ def admin_bootstrap_data():
 
 @app.route('/api/admin/test/clear', methods=['POST'])
 def admin_clear_data():
-    admin_user, error_response, status = require_admin()
-    if error_response:
-        return error_response, status
+    if not ensure_admin_or_token():
+        return jsonify({'error': 'Admin access required'}), 403
     
     clear_demo_data(db)
     return jsonify({'success': True})
@@ -646,9 +672,8 @@ def admin_clear_data():
 
 @app.route('/api/admin/test/create-user', methods=['POST'])
 def admin_create_test_user():
-    admin_user, error_response, status = require_admin()
-    if error_response:
-        return error_response, status
+    if not ensure_admin_or_token():
+        return jsonify({'error': 'Admin access required'}), 403
     
     data = request.json or {}
     role = data.get('role', UserRole.CLIENT)
@@ -677,15 +702,43 @@ def admin_create_test_user():
 
 @app.route('/api/admin/test/user/<int:target_user_id>', methods=['GET'])
 def admin_get_user(target_user_id):
-    admin_user, error_response, status = require_admin()
-    if error_response:
-        return error_response, status
+    if not ensure_admin_or_token():
+        return jsonify({'error': 'Admin access required'}), 403
     
     user = db.get_user(target_user_id)
     if not user:
         return jsonify({'error': 'User not found'}), 404
     
     return jsonify({'user': user})
+
+
+@app.route('/api/admin/test/set-role', methods=['POST'])
+def admin_set_role():
+    if not ensure_admin_or_token():
+        return jsonify({'error': 'Admin access required'}), 403
+    
+    data = request.json or {}
+    try:
+        target_user_id = int(data.get('user_id'))
+    except (TypeError, ValueError):
+        return jsonify({'error': 'user_id must be numeric'}), 400
+    
+    new_role = (data.get('role') or '').lower()
+    if new_role not in [UserRole.CLIENT, UserRole.MANAGER, UserRole.ADMIN]:
+        return jsonify({'error': 'Invalid role'}), 400
+    
+    target_user = db.get_user(target_user_id)
+    if not target_user:
+        db.add_user(
+            user_id=target_user_id,
+            role=new_role
+        )
+    else:
+        db.set_user_role(target_user_id, new_role)
+        # Очистим активную сессию, чтобы новое значение подхватилось
+        db.clear_active_session(target_user_id)
+    
+    return jsonify({'success': True, 'user_id': target_user_id, 'role': new_role})
 
 
 @app.route('/api/payments', methods=['POST'])
