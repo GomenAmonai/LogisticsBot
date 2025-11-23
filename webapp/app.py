@@ -175,6 +175,8 @@ def auth():
     session['user_id'] = user_id
     session['user_role'] = user['role']
     session['user_name'] = user['first_name']
+
+    app_logger.info("Auth success: user_id=%s role=%s", user_id, user['role'])
     
     return jsonify({
         'success': True,
@@ -671,6 +673,19 @@ def admin_create_test_user():
     )
     
     return jsonify({'success': True, 'user_id': user_id, 'role': role})
+
+
+@app.route('/api/admin/test/user/<int:target_user_id>', methods=['GET'])
+def admin_get_user(target_user_id):
+    admin_user, error_response, status = require_admin()
+    if error_response:
+        return error_response, status
+    
+    user = db.get_user(target_user_id)
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+    
+    return jsonify({'user': user})
 
 
 @app.route('/api/payments', methods=['POST'])
